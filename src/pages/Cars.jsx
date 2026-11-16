@@ -1,3 +1,4 @@
+import GaragemHome from "./GaragemHome";
 // src/pages/Cars.jsx
 
 import { useEffect, useRef, useState } from "react";
@@ -281,6 +282,8 @@ export default function Cars({
     mostrarCadastro,
     setMostrarCadastro,
   ] = useState(false);
+
+  const [modoLista, setModoLista] = useState(false);
 
   const listaCarrosRef =
     useRef(null);
@@ -1727,13 +1730,23 @@ export default function Cars({
         carId={
           carroSelecionadoId
         }
-        onBack={() =>
-          setCarroSelecionadoId(
-            null
-          )
-        }
+        onBack={() => {
+          setCarroSelecionadoId(null);
+          carregarCarros();
+        }}
       />
     );
+  }
+
+  if (!modoLista && !mostrarCadastro && editId == null && kmId == null) {
+    return <GaragemHome
+      carros={carros}
+      resumo={resumoGaragem}
+      onAdicionar={abrirCadastro}
+      onAbrirCarro={setCarroSelecionadoId}
+      onVeiculos={() => setModoLista(true)}
+      onAlertas={abrirRevisoesStatus}
+    />;
   }
 
   /* ==================================================
@@ -1742,6 +1755,8 @@ export default function Cars({
 
   return (
     <div className="carrev-home">
+      <button type="button" className="gr-back-home" onClick={() => { setModoLista(false); setMostrarCadastro(false); cancelarEdicao(); cancelarKm(); carregarCarros(); }}>← Início</button>
+
 
       {/* LOGO */}
 
