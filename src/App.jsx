@@ -5,17 +5,30 @@ import Proximas from "./pages/Proximas";
 export default function App() {
   const [tela, setTela] = useState("carros");
 
-  return (
-    <div>
-      <nav style={{ padding: 12, borderBottom: "1px solid #333" }}>
-        <button onClick={() => setTela("carros")} style={{ marginRight: 8 }}>
-          Carros
-        </button>
-        <button onClick={() => setTela("proximas")}>Próximas revisões</button>
-      </nav>
+  const [filtroRevisoes, setFiltroRevisoes] = useState("TODAS");
 
-      {tela === "carros" && <Cars />}
-      {tela === "proximas" && <Proximas />}
-    </div>
+  function abrirProximas(filtro = "TODAS") {
+    setFiltroRevisoes(filtro);
+    setTela("proximas");
+  }
+
+  function voltarParaGaragem() {
+    setTela("carros");
+    setFiltroRevisoes("TODAS");
+  }
+
+  if (tela === "proximas") {
+    return (
+      <Proximas
+        filtroStatusInicial={filtroRevisoes}
+        onBack={voltarParaGaragem}
+      />
+    );
+  }
+
+  return (
+    <Cars
+      onAbrirProximas={abrirProximas}
+    />
   );
 }

@@ -1,12 +1,25 @@
+// src/pages/Proximas.jsx
+
 import { useEffect, useMemo, useState } from "react";
 import { db } from "../db/db";
 
 function diasAte(dataYYYYMMDD) {
   const [y, m, d] = String(dataYYYYMMDD).split("-").map(Number);
+
   if (!y || !m || !d) return null;
 
-  const alvo = new Date(y, m - 1, d, 0, 0, 0, 0);
+  const alvo = new Date(
+    y,
+    m - 1,
+    d,
+    0,
+    0,
+    0,
+    0
+  );
+
   const hoje = new Date();
+
   const base = new Date(
     hoje.getFullYear(),
     hoje.getMonth(),
@@ -17,14 +30,19 @@ function diasAte(dataYYYYMMDD) {
     0
   );
 
-  const diffMs = alvo.getTime() - base.getTime();
-  return Math.round(diffMs / (1000 * 60 * 60 * 24));
+  const diffMs =
+    alvo.getTime() - base.getTime();
+
+  return Math.round(
+    diffMs / (1000 * 60 * 60 * 24)
+  );
 }
 
 function statusPorData(dias) {
   if (dias == null) return "OK";
   if (dias < 0) return "VENCIDA";
   if (dias <= 14) return "EM BREVE";
+
   return "OK";
 }
 
@@ -32,24 +50,64 @@ function statusPorKm(kmRestante) {
   if (kmRestante == null) return "OK";
   if (kmRestante < 0) return "VENCIDA";
   if (kmRestante <= 500) return "EM BREVE";
+
   return "OK";
 }
 
 function piorStatus(a, b) {
-  const rank = { VENCIDA: 3, "EM BREVE": 2, OK: 1 };
+  const rank = {
+    VENCIDA: 3,
+    "EM BREVE": 2,
+    OK: 1,
+  };
+
   return rank[a] >= rank[b] ? a : b;
 }
 
-/**
- * - Se você chamar <Proximas carId={id} />, ele filtra automaticamente.
- * - Se chamar <Proximas />, ele vira uma tela geral (com filtro).
- */
-export default function Proximas({ carId = null }) {
-  const [carros, setCarros] = useState([]);
-  const [itens, setItens] = useState([]);
-  const [filtroCarroId, setFiltroCarroId] = useState("todos");
+function formatarData(data) {
+  if (!data) return "—";
 
-  // Se veio carId (tela dentro do detalhe do carro), trava o filtro nesse carro.
+  const [ano, mes, dia] = String(data).split("-");
+
+  if (!ano || !mes || !dia) {
+    return data;
+  }
+
+  return `${dia}/${mes}/${ano}`;
+}
+
+function formatarKm(valor) {
+  if (
+    valor == null ||
+    !Number.isFinite(Number(valor))
+  ) {
+    return "—";
+  }
+
+  return Number(valor).toLocaleString("pt-BR");
+}
+
+export default function Proximas({
+  carId = null,
+  filtroStatusInicial = "TODAS",
+  onBack = null,
+}) {
+  const [carros, setCarros] = useState([]);
+  const [todosItens, setTodosItens] = useState([]);
+
+  const [filtroCarroId, setFiltroCarroId] =
+    useState("todos");
+
+  const [filtroStatus, setFiltroStatus] =
+    useState(
+      filtroStatusInicial === "OK"
+        ? "TODAS"
+        : filtroStatusInicial || "TODAS"
+    );
+
+  const [carregando, setCarregando] =
+    useState(false);
+
   useEffect(() => {
     if (carId != null) {
       setFiltroCarroId(String(carId));
@@ -58,143 +116,719 @@ export default function Proximas({ carId = null }) {
     }
   }, [carId]);
 
+  useEffect(() => {
+    if (filtroStatusInicial === "OK") {
+      setFiltroStatus("TODAS");
+    } else {
+      setFiltroStatus(
+        filtroStatusInicial || "TODAS"
+      );
+    }
+  }, [filtroStatusInicial]);
+
   async function carregar() {
-    // serviços/revisões
-    const revisoes = await db.services.toArray();
-    const carrosDb = await db.cars.toArray();
+    setCarregando(true);
 
-    const carrosMap = {};
-    carrosDb.forEach((c) => {
-      carrosMap[c.id] = c;
-    });
+    try {
+      const revisoes =
+        await db.services.toArray();
 
-    // Aqui a lógica continua baseada em nextDate / nextMileage.
-    // Se o seu Revisoes.jsx não estiver gravando esses campos, a lista ficará vazia.
-    const lista = revisoes
-      .filter((r) => r.nextDate || r.nextMileage != null)
-      .map((r) => {
-        const carro = carrosMap[r.carId];
-        const carroNome = carro?.name || "Carro";
-        const kmAtual =
-          typeof carro?.currentMileage === "number" ? carro.currentMileage : null;
+      const carrosDb =
+        await db.cars.toArray();
 
-        const dias = r.nextDate ? diasAte(r.nextDate) : null;
+      const carrosMap = {};
 
-        const kmRestante =
-          r.nextMileage != null && kmAtual != null
-            ? Number(r.nextMileage) - Number(kmAtual)
-            : null;
-
-        let status = "OK";
-        status = piorStatus(status, statusPorData(dias));
-        status = piorStatus(status, statusPorKm(kmRestante));
-
-        return {
-          ...r,
-          carroNome,
-          kmAtual,
-          diasAte: dias,
-          kmRestante,
-          status,
-        };
+      carrosDb.forEach((c) => {
+        carrosMap[c.id] = c;
       });
 
-    const filtrada =
-      filtroCarroId === "todos"
-        ? lista
-        : lista.filter((x) => String(x.carId) === String(filtroCarroId));
+      const lista = revisoes
+        .filter(
+          (r) =>
+            r.nextDate ||
+            r.nextMileage != null
+        )
+        .map((r) => {
+          const carro =
+            carrosMap[r.carId];
 
-    const rank = { VENCIDA: 0, "EM BREVE": 1, OK: 2 };
+          const carroNome =
+            carro?.name || "Carro";
 
-    filtrada.sort((a, b) => {
-      if (rank[a.status] !== rank[b.status]) return rank[a.status] - rank[b.status];
+          const kmAtual =
+            typeof carro?.currentMileage === "number"
+              ? carro.currentMileage
+              : null;
 
-      const aDias = a.diasAte ?? Infinity;
-      const bDias = b.diasAte ?? Infinity;
-      if (aDias !== bDias) return aDias - bDias;
+          const dias =
+            r.nextDate
+              ? diasAte(r.nextDate)
+              : null;
 
-      const aKm = a.kmRestante ?? Infinity;
-      const bKm = b.kmRestante ?? Infinity;
-      return aKm - bKm;
-    });
+          const kmRestante =
+            r.nextMileage != null &&
+            kmAtual != null
+              ? Number(r.nextMileage) -
+                Number(kmAtual)
+              : null;
 
-    setCarros(carrosDb);
-    setItens(filtrada);
+          let status = "OK";
+
+          status = piorStatus(
+            status,
+            statusPorData(dias)
+          );
+
+          status = piorStatus(
+            status,
+            statusPorKm(kmRestante)
+          );
+
+          return {
+            ...r,
+            carroNome,
+            kmAtual,
+            diasAte: dias,
+            kmRestante,
+            status,
+          };
+        });
+
+      const rank = {
+        VENCIDA: 0,
+        "EM BREVE": 1,
+        OK: 2,
+      };
+
+      lista.sort((a, b) => {
+        if (
+          rank[a.status] !==
+          rank[b.status]
+        ) {
+          return (
+            rank[a.status] -
+            rank[b.status]
+          );
+        }
+
+        const aDias =
+          a.diasAte ?? Infinity;
+
+        const bDias =
+          b.diasAte ?? Infinity;
+
+        if (aDias !== bDias) {
+          return aDias - bDias;
+        }
+
+        const aKm =
+          a.kmRestante ?? Infinity;
+
+        const bKm =
+          b.kmRestante ?? Infinity;
+
+        return aKm - bKm;
+      });
+
+      setCarros(carrosDb);
+      setTodosItens(lista);
+
+    } finally {
+      setCarregando(false);
+    }
   }
 
   useEffect(() => {
     carregar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtroCarroId]);
+  }, []);
 
-  const resumo = useMemo(() => {
-    const vencidas = itens.filter((i) => i.status === "VENCIDA").length;
-    const emBreve = itens.filter((i) => i.status === "EM BREVE").length;
-    const ok = itens.filter((i) => i.status === "OK").length;
-    return { vencidas, emBreve, ok };
-  }, [itens]);
+  /* ==================================================
+     ITENS FILTRADOS
+  ================================================== */
 
-  const mostrarFiltro = carId == null; // só mostra dropdown quando for tela geral
+  const itens = useMemo(() => {
+    let lista = [...todosItens];
+
+    if (filtroCarroId !== "todos") {
+      lista = lista.filter(
+        (x) =>
+          String(x.carId) ===
+          String(filtroCarroId)
+      );
+    }
+
+    if (filtroStatus !== "TODAS") {
+      lista = lista.filter(
+        (x) =>
+          x.status === filtroStatus
+      );
+    }
+
+    return lista;
+
+  }, [
+    todosItens,
+    filtroCarroId,
+    filtroStatus,
+  ]);
+
+  /* ==================================================
+     RESUMO
+  ================================================== */
+
+  const resumoGeral = useMemo(() => {
+    let base = [...todosItens];
+
+    if (filtroCarroId !== "todos") {
+      base = base.filter(
+        (x) =>
+          String(x.carId) ===
+          String(filtroCarroId)
+      );
+    }
+
+    return {
+      total: base.length,
+
+      vencidas: base.filter(
+        (i) =>
+          i.status === "VENCIDA"
+      ).length,
+
+      emBreve: base.filter(
+        (i) =>
+          i.status === "EM BREVE"
+      ).length,
+    };
+
+  }, [
+    todosItens,
+    filtroCarroId,
+  ]);
+
+  const mostrarFiltroCarro =
+    carId == null;
+
+  /* ==================================================
+     TÍTULO
+  ================================================== */
+
+  function tituloFiltro() {
+    if (
+      filtroStatus === "VENCIDA"
+    ) {
+      return "Revisões vencidas";
+    }
+
+    if (
+      filtroStatus === "EM BREVE"
+    ) {
+      return "Revisões em breve";
+    }
+
+    return "Próximas revisões";
+  }
+
+  /* ==================================================
+     COR
+  ================================================== */
+
+  function corStatus(status) {
+    if (
+      status === "VENCIDA"
+    ) {
+      return "#ef4444";
+    }
+
+    if (
+      status === "EM BREVE"
+    ) {
+      return "#f59e0b";
+    }
+
+    return "#22c55e";
+  }
+
+  /* ==================================================
+     TELA
+  ================================================== */
 
   return (
-    <div>
-      <h3 style={{ marginTop: 0 }}>Próximas revisões</h3>
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 980,
+        margin: "0 auto",
+        padding: 18,
+        color: "#fff",
+      }}
+    >
 
-      <div style={{ marginBottom: 12, display: "flex", gap: 12, flexWrap: "wrap" }}>
+      {/* ==================================================
+          CABEÇALHO
+      ================================================== */}
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          marginBottom: 24,
+          flexWrap: "wrap",
+        }}
+      >
+
         <div>
-          <strong>Resumo:</strong> Vencidas: {resumo.vencidas} | Em breve:{" "}
-          {resumo.emBreve} | OK: {resumo.ok}
+
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              style={{
+                marginBottom: 14,
+              }}
+            >
+              ← Voltar
+            </button>
+          ) : null}
+
+          <h2
+            style={{
+              margin: 0,
+              fontSize: 28,
+            }}
+          >
+            {tituloFiltro()}
+          </h2>
+
+          <div
+            style={{
+              marginTop: 5,
+              fontSize: 13,
+              color: "#8f99a8",
+            }}
+          >
+            Acompanhe as próximas manutenções da sua garagem.
+          </div>
+
         </div>
 
-        {mostrarFiltro ? (
-          <div>
-            <label>
-              Filtrar por carro:{" "}
-              <select
-                value={filtroCarroId}
-                onChange={(e) => setFiltroCarroId(e.target.value)}
-              >
-                <option value="todos">Todos</option>
-                {carros.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        ) : null}
-
-        <button onClick={carregar}>Atualizar</button>
       </div>
 
+      {/* ==================================================
+          RESUMO
+      ================================================== */}
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(3, minmax(0, 1fr))",
+          gap: 10,
+          marginBottom: 18,
+        }}
+      >
+
+        {/* TODAS */}
+
+        <button
+          type="button"
+          onClick={() =>
+            setFiltroStatus("TODAS")
+          }
+          style={{
+            padding: 14,
+            textAlign: "left",
+            borderColor:
+              filtroStatus === "TODAS"
+                ? "#4d82ff"
+                : undefined,
+          }}
+        >
+
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 800,
+            }}
+          >
+            {resumoGeral.total}
+          </div>
+
+          <div
+            style={{
+              color: "#9ba4b2",
+              fontSize: 12,
+            }}
+          >
+            Todas
+          </div>
+
+        </button>
+
+        {/* EM BREVE */}
+
+        <button
+          type="button"
+          onClick={() =>
+            setFiltroStatus(
+              "EM BREVE"
+            )
+          }
+          style={{
+            padding: 14,
+            textAlign: "left",
+            borderColor:
+              filtroStatus ===
+              "EM BREVE"
+                ? "#f59e0b"
+                : undefined,
+          }}
+        >
+
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 800,
+              color: "#f59e0b",
+            }}
+          >
+            {resumoGeral.emBreve}
+          </div>
+
+          <div
+            style={{
+              color: "#9ba4b2",
+              fontSize: 12,
+            }}
+          >
+            Em breve
+          </div>
+
+        </button>
+
+        {/* VENCIDAS */}
+
+        <button
+          type="button"
+          onClick={() =>
+            setFiltroStatus(
+              "VENCIDA"
+            )
+          }
+          style={{
+            padding: 14,
+            textAlign: "left",
+            borderColor:
+              filtroStatus ===
+              "VENCIDA"
+                ? "#ef4444"
+                : undefined,
+          }}
+        >
+
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 800,
+              color: "#ef4444",
+            }}
+          >
+            {resumoGeral.vencidas}
+          </div>
+
+          <div
+            style={{
+              color: "#9ba4b2",
+              fontSize: 12,
+            }}
+          >
+            Vencidas
+          </div>
+
+        </button>
+
+      </div>
+
+      {/* ==================================================
+          FILTROS
+      ================================================== */}
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          flexWrap: "wrap",
+          marginBottom: 20,
+        }}
+      >
+
+        {mostrarFiltroCarro ? (
+
+          <select
+            value={filtroCarroId}
+            onChange={(e) =>
+              setFiltroCarroId(
+                e.target.value
+              )
+            }
+          >
+
+            <option value="todos">
+              Todos os veículos
+            </option>
+
+            {carros.map((c) => (
+              <option
+                key={c.id}
+                value={c.id}
+              >
+                {c.name}
+              </option>
+            ))}
+
+          </select>
+
+        ) : null}
+
+        <select
+          value={filtroStatus}
+          onChange={(e) =>
+            setFiltroStatus(
+              e.target.value
+            )
+          }
+        >
+
+          <option value="TODAS">
+            Todos os status
+          </option>
+
+          <option value="EM BREVE">
+            Em breve
+          </option>
+
+          <option value="VENCIDA">
+            Vencidas
+          </option>
+
+        </select>
+
+        <button
+          type="button"
+          onClick={carregar}
+          disabled={carregando}
+        >
+          {carregando
+            ? "Atualizando..."
+            : "Atualizar"}
+        </button>
+
+      </div>
+
+      {/* ==================================================
+          LISTA
+      ================================================== */}
+
       {itens.length === 0 ? (
-        <p>Nenhuma revisão futura cadastrada.</p>
+
+        <div
+          style={{
+            padding: 24,
+            border:
+              "1px solid #242c36",
+            borderRadius: 16,
+            background: "#0e131a",
+            color: "#8f99a8",
+          }}
+        >
+          Nenhuma revisão encontrada para este filtro.
+        </div>
+
       ) : (
-        <ul style={{ paddingLeft: 18, margin: 0 }}>
+
+        <div
+          style={{
+            display: "grid",
+            gap: 12,
+          }}
+        >
+
           {itens.map((r) => (
-            <li key={r.id} style={{ marginBottom: 14 }}>
-              <div>
-                <strong>{r.carroNome}</strong> — {r.type} —{" "}
-                <strong>{r.status}</strong>
+
+            <article
+              key={r.id}
+              style={{
+                padding: 16,
+                border:
+                  "1px solid #242c36",
+
+                borderLeft:
+                  `3px solid ${corStatus(
+                    r.status
+                  )}`,
+
+                borderRadius: 15,
+
+                background:
+                  "#0e131a",
+              }}
+            >
+
+              {/* ==================================================
+                  CABEÇALHO DO ITEM
+              ================================================== */}
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent:
+                    "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+
+                <div>
+
+                  <strong
+                    style={{
+                      fontSize: 15,
+                    }}
+                  >
+                    {r.carroNome}
+                  </strong>
+
+                  <div
+                    style={{
+                      marginTop: 3,
+                      color: "#9ba4b2",
+                      fontSize: 13,
+                    }}
+                  >
+                    {r.type ||
+                      "Revisão"}
+                  </div>
+
+                </div>
+
+                <strong
+                  style={{
+                    color:
+                      corStatus(
+                        r.status
+                      ),
+                    fontSize: 12,
+                  }}
+                >
+
+                  {r.status === "OK"
+                    ? "PROGRAMADA"
+                    : r.status}
+
+                </strong>
+
               </div>
 
-              <div style={{ fontSize: 14 }}>
+              {/* ==================================================
+                  DADOS
+              ================================================== */}
+
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "7px 16px",
+                  marginTop: 13,
+                  color: "#a3abb7",
+                  fontSize: 12,
+                }}
+              >
+
                 {r.nextDate ? (
-                  <>Data: {r.nextDate} ({r.diasAte} dia(s))</>
-                ) : (
-                  <>Data: —</>
-                )}
-                {" | "}
-                {r.nextMileage != null ? <>Km alvo: {r.nextMileage}</> : <>Km alvo: —</>}
-                {" | "}
-                {r.kmAtual != null ? <>Km atual: {r.kmAtual}</> : <>Km atual: não informado</>}
-                {r.kmRestante != null ? <> | Faltam: {r.kmRestante} km</> : null}
+
+                  <span>
+                    📅{" "}
+                    {formatarData(
+                      r.nextDate
+                    )}
+                  </span>
+
+                ) : null}
+
+                {r.diasAte != null ? (
+
+                  <span>
+
+                    {r.diasAte < 0
+                      ? `${Math.abs(
+                          r.diasAte
+                        )} dia(s) atrasada`
+
+                      : r.diasAte === 0
+                      ? "Hoje"
+
+                      : `Faltam ${r.diasAte} dia(s)`}
+
+                  </span>
+
+                ) : null}
+
+                {r.nextMileage != null ? (
+
+                  <span>
+                    ◎ Alvo:{" "}
+                    {formatarKm(
+                      r.nextMileage
+                    )}{" "}
+                    km
+                  </span>
+
+                ) : null}
+
+                {r.kmAtual != null ? (
+
+                  <span>
+                    Atual:{" "}
+                    {formatarKm(
+                      r.kmAtual
+                    )}{" "}
+                    km
+                  </span>
+
+                ) : null}
+
+                {r.kmRestante != null ? (
+
+                  <span>
+
+                    {r.kmRestante < 0
+                      ? `${formatarKm(
+                          Math.abs(
+                            r.kmRestante
+                          )
+                        )} km vencidos`
+
+                      : `Faltam ${formatarKm(
+                          r.kmRestante
+                        )} km`}
+
+                  </span>
+
+                ) : null}
+
               </div>
-            </li>
+
+            </article>
+
           ))}
-        </ul>
+
+        </div>
+
       )}
+
     </div>
   );
 }

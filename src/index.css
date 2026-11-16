@@ -1,68 +1,2524 @@
+/* =========================================================
+   CARREV
+   ESTILO GLOBAL
+========================================================= */
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  color: #ffffff;
+  background: #080b10;
+
+  --carrev-bg: #080b10;
+  --carrev-bg-soft: #0d1118;
+  --carrev-card: #10141b;
+  --carrev-card-2: #121720;
+
+  --carrev-border: #242b36;
+  --carrev-border-soft: #1b212b;
+
+  --carrev-text: #ffffff;
+  --carrev-text-soft: #b3bbc8;
+  --carrev-text-muted: #7f8999;
+
+  --carrev-blue: #1d5cff;
+  --carrev-blue-light: #4d82ff;
+
+  --carrev-green: #22c55e;
+  --carrev-yellow: #f59e0b;
+  --carrev-red: #ef4444;
+
+  --carrev-radius: 18px;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+/* =========================================================
+   FUNDO GLOBAL
+   IMPORTANTE PARA IPHONE / PWA
+========================================================= */
+
+html {
+  margin: 0;
+  padding: 0;
+
+  min-width: 320px;
+  min-height: 100%;
+
+  background: var(--carrev-bg);
+
+  color: var(--carrev-text);
+
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  padding: 0;
+
   min-width: 320px;
+
   min-height: 100vh;
+  min-height: 100dvh;
+
+  background: var(--carrev-bg);
+
+  color: var(--carrev-text);
+
+  overflow-x: hidden;
 }
 
-h1 {
-  font-size: 3.2em;
+#root {
+  width: 100%;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  background: var(--carrev-bg);
+
+  color: var(--carrev-text);
+}
+
+/* força o tema escuro mesmo se o iPhone estiver em modo claro */
+
+@media (prefers-color-scheme: light) {
+  html,
+  body,
+  #root {
+    background: var(--carrev-bg) !important;
+    color: var(--carrev-text) !important;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   LINKS
+========================================================= */
+
+a {
+  color: var(--carrev-blue-light);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #76a0ff;
+}
+
+/* =========================================================
+   BOTÕES GLOBAIS
+========================================================= */
+
+button {
+  font: inherit;
+
+  border-radius: 10px;
+
+  border: 1px solid #2c3441;
+
+  padding: 0.65em 1em;
+
+  background: #151a22;
+
+  color: #ffffff;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.15s;
+}
+
+button:hover {
+  border-color: var(--carrev-blue);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--carrev-blue);
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   INPUTS
+========================================================= */
+
+input,
+select,
+textarea {
+  font: inherit;
+
+  color: #ffffff;
+
+  background: #0b0f15;
+
+  border: 1px solid #313845;
+
+  border-radius: 9px;
+
+  padding: 10px 11px;
+
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--carrev-blue);
+
+  box-shadow:
+    0 0 0 2px rgba(29, 92, 255, 0.13);
+}
+
+select option {
+  background: #11151c;
+  color: #fff;
+}
+
+/* =========================================================
+   TÍTULOS
+========================================================= */
+
+h1,
+h2,
+h3,
+h4 {
+  color: #ffffff;
+}
+
+/* =========================================================
+   HOME
+========================================================= */
+
+.carrev-home {
+  width: 100%;
+
+  max-width: 980px;
+
+  margin: 0 auto;
+
+  padding:
+    22px
+    16px
+    48px;
+
+  background: var(--carrev-bg);
+
+  color: #fff;
+}
+
+/* =========================================================
+   LOGO
+========================================================= */
+
+.carrev-home-header {
+  text-align: center;
+
+  padding:
+    14px
+    0
+    28px;
+}
+
+.carrev-logo {
+  display: inline-flex;
+
+  align-items: center;
+
+  font-size: 36px;
+
+  font-weight: 900;
+
+  font-style: italic;
+
+  letter-spacing: -2.3px;
+
+  line-height: 1;
+}
+
+.carrev-logo-car {
+  color: #ffffff !important;
+}
+
+.carrev-logo-rev {
+  color: var(--carrev-blue) !important;
+}
+
+.carrev-tagline {
+  margin-top: 8px;
+
+  color: #8791a1;
+
+  font-size: 14px;
+
+  letter-spacing: 0.3px;
+}
+
+/* =========================================================
+   ALERTAS DA HOME
+========================================================= */
+
+.carrev-alertas-home {
+  margin-bottom: 26px;
+}
+
+/* tenta integrar os cards antigos de alerta ao tema */
+
+.carrev-alertas-home > * {
+  border-radius: 16px;
+}
+
+/* =========================================================
+   MINHA GARAGEM
+========================================================= */
+
+.carrev-garagem-section {
+  margin:
+    8px
+    0
+    18px;
+}
+
+.carrev-garagem-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 16px;
+}
+
+.carrev-garagem-title {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 30px;
+
+  line-height: 1.1;
+
+  font-weight: 850;
+
+  letter-spacing: -0.8px;
+}
+
+.carrev-garagem-count {
+  margin-top: 6px;
+
+  color: #929baa;
+
+  font-size: 13px;
+}
+
+/* =========================================================
+   ADICIONAR VEÍCULO
+========================================================= */
+
+.carrev-add-button {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  min-height: 44px;
+
+  padding:
+    0
+    17px;
+
+  border:
+    1px solid
+    var(--carrev-blue);
+
+  border-radius: 13px;
+
+  background:
+    rgba(29, 92, 255, 0.08);
+
+  color: #5c8bff;
+
+  font-size: 14px;
+
+  font-weight: 750;
+
+  white-space: nowrap;
+}
+
+.carrev-add-button:hover {
+  background:
+    rgba(29, 92, 255, 0.16);
+
+  border-color:
+    var(--carrev-blue-light);
+}
+
+.carrev-add-plus {
+  font-size: 22px;
+
+  font-weight: 400;
+
+  line-height: 1;
+}
+
+/* =========================================================
+   RESUMO DA GARAGEM
+========================================================= */
+
+.carrev-resumo {
+  margin:
+    0
+    0
+    24px;
+
+  padding: 18px;
+
+  border:
+    1px solid
+    #202732;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #0e131a,
+      #0a0e14
+    );
+
+  box-shadow:
+    0 10px 30px
+    rgba(0, 0, 0, 0.16);
+}
+
+.carrev-resumo-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 16px;
+}
+
+.carrev-resumo-title {
+  color: #ffffff;
+
+  font-size: 18px;
+
+  font-weight: 800;
+
+  letter-spacing: -0.25px;
+}
+
+.carrev-resumo-subtitle {
+  margin-top: 3px;
+
+  color: #7f8999;
+
+  font-size: 12px;
+}
+
+.carrev-resumo-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 10px;
+}
+
+.carrev-resumo-card {
+  min-width: 0;
+
+  padding:
+    16px
+    10px;
+
+  border:
+    1px solid
+    #202834;
+
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #11161e,
+      #0b0f15
+    );
+
+  text-align: center;
+
+  transition:
+    transform 0.2s,
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.carrev-resumo-card:hover {
+  transform:
+    translateY(-1px);
+
+  border-color:
+    #303b4a;
+
+  background:
+    linear-gradient(
+      145deg,
+      #141a23,
+      #0c1118
+    );
+}
+
+.carrev-resumo-icon {
+  width: 46px;
+  height: 46px;
+
+  margin:
+    0
+    auto
+    10px;
+
+  display: grid;
+
+  place-items: center;
+
+  border-radius: 50%;
+
+  font-size: 21px;
+
+  font-weight: 850;
+}
+
+.carrev-resumo-icon.azul {
+  background:
+    rgba(29, 92, 255, 0.15);
+
+  color:
+    #4380ff;
+}
+
+.carrev-resumo-icon.verde {
+  background:
+    rgba(34, 197, 94, 0.13);
+
+  color:
+    var(--carrev-green);
+}
+
+.carrev-resumo-icon.amarelo {
+  background:
+    rgba(245, 158, 11, 0.14);
+
+  color:
+    var(--carrev-yellow);
+}
+
+.carrev-resumo-icon.vermelho {
+  background:
+    rgba(239, 68, 68, 0.13);
+
+  color:
+    var(--carrev-red);
+}
+
+.carrev-resumo-numero {
+  color: #ffffff;
+
+  font-size: 26px;
+
+  line-height: 1;
+
+  font-weight: 850;
+
+  letter-spacing: -0.5px;
+}
+
+.carrev-resumo-label {
+  margin-top: 7px;
+
+  color: #9ba4b2;
+
+  font-size: 12px;
+
+  line-height: 1.3;
+}
+
+/* =========================================================
+   LISTA DE CARROS
+========================================================= */
+
+.carrev-car-list {
+  display: grid;
+
+  gap: 20px;
+}
+
+.carrev-car-wrapper {
+  display: grid;
+
+  gap: 12px;
+}
+
+/* =========================================================
+   CARD PREMIUM DO VEÍCULO
+========================================================= */
+
+.carrev-car-card {
+  position: relative;
+
+  width: 100%;
+
+  min-height: 440px;
+
+  overflow: hidden;
+
+  border-radius: 24px;
+
+  border:
+    1px solid
+    #222a35;
+
+  background:
+    radial-gradient(
+      circle at 72% 15%,
+      #142140 0%,
+      transparent 40%
+    ),
+    #0b0e14;
+
+  color: #ffffff;
+
+  box-shadow:
+    0 15px 45px
+    rgba(0, 0, 0, 0.28);
+}
+
+/* =========================================================
+   CARD SEM FOTO
+========================================================= */
+
+.carrev-car-card-sem-foto {
+  background:
+    radial-gradient(
+      circle at 75% 15%,
+      rgba(29, 92, 255, 0.22),
+      transparent 36%
+    ),
+    linear-gradient(
+      145deg,
+      #101622,
+      #07090d
+    );
+}
+
+/* =========================================================
+   FOTO DO CARRO
+========================================================= */
+
+.carrev-car-photo {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+/* =========================================================
+   DEGRADÊ DA FOTO
+========================================================= */
+
+.carrev-car-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.03) 12%,
+      rgba(0, 0, 0, 0.16) 42%,
+      rgba(0, 0, 0, 0.92) 78%,
+      rgba(0, 0, 0, 0.99) 100%
+    );
+
+  pointer-events: none;
+}
+
+/* =========================================================
+   PLACEHOLDER DE FOTO
+========================================================= */
+
+.carrev-car-placeholder {
+  position: absolute;
+
+  inset: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding-bottom: 135px;
+
+  text-align: center;
+
+  color: #778292;
+
+  z-index: 1;
+}
+
+.carrev-placeholder-icon {
+  font-size: 46px;
+
+  margin-bottom: 8px;
+
+  opacity: 0.28;
+
+  filter: grayscale(1);
+}
+
+.carrev-placeholder-title {
+  color: #748091;
+
+  font-size: 14px;
+
+  font-weight: 700;
+}
+
+.carrev-placeholder-text {
+  margin-top: 4px;
+
+  color: #555f6e;
+
+  font-size: 11px;
+}
+
+/* =========================================================
+   CONTEÚDO DO CARD
+========================================================= */
+
+.carrev-car-content {
+  position: relative;
+
+  z-index: 2;
+
+  min-height: 440px;
+
+  padding: 25px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: flex-end;
+}
+
+.carrev-car-name {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size:
+    clamp(
+      28px,
+      5vw,
+      39px
+    );
+
+  line-height: 1.05;
+
+  font-weight: 850;
+
+  letter-spacing: -1px;
+
+  text-shadow:
+    0 2px 10px
+    rgba(0, 0, 0, 0.5);
+}
+
+.carrev-car-model {
+  margin-top: 7px;
+
+  color: #c0c7d1;
+
+  font-size: 14px;
+}
+
+/* =========================================================
+   KM
+========================================================= */
+
+.carrev-car-km {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  margin-top: 14px;
+
+  color: #c6ccd5;
+
+  font-size: 16px;
+}
+
+.carrev-car-km::before {
+  content: "◎";
+
+  color: #87909d;
+
+  font-size: 15px;
+}
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.carrev-car-status {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  margin-top: 9px;
+
+  font-size: 15px;
+
+  font-weight: 650;
+}
+
+.carrev-car-status.ok {
+  color: var(--carrev-green);
+}
+
+.carrev-car-status.breve {
+  color: var(--carrev-yellow);
+}
+
+.carrev-car-status.vencida {
+  color: var(--carrev-red);
+}
+
+/* =========================================================
+   CONSUMO
+========================================================= */
+
+.carrev-car-consumo {
+  margin-top: 8px;
+
+  color: #abb3c0;
+
+  font-size: 13px;
+}
+
+.carrev-car-consumo strong {
+  color: #ffffff;
+}
+
+/* =========================================================
+   BOTÃO PRINCIPAL
+========================================================= */
+
+.carrev-car-bottom {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-end;
+
+  gap: 15px;
+
+  margin-top: 20px;
+}
+
+.carrev-primary-button {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 10px;
+
+  min-height: 46px;
+
+  border: 0;
+
+  border-radius: 13px;
+
+  padding:
+    12px
+    22px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #1760ff,
+      #2247ff
+    );
+
+  color: #ffffff;
+
+  font-size: 15px;
+
+  font-weight: 750;
+
+  box-shadow:
+    0 10px 26px
+    rgba(29, 92, 255, 0.24);
+}
+
+.carrev-primary-button:hover {
+  filter: brightness(1.08);
+
+  border: 0;
+}
+
+/* =========================================================
+   AÇÕES SECUNDÁRIAS
+========================================================= */
+
+.carrev-secondary-actions {
+  display: flex;
+
+  gap: 8px;
+
+  flex-wrap: wrap;
+
+  margin-top: 12px;
+}
+
+.carrev-secondary-actions button {
+  padding:
+    8px
+    11px;
+
+  border:
+    1px solid
+    #303846;
+
+  border-radius: 9px;
+
+  background:
+    rgba(
+      10,
+      14,
+      20,
+      0.88
+    );
+
+  color: #cbd1da;
+
+  font-size: 12px;
+}
+
+.carrev-secondary-actions button:hover {
+  border-color:
+    var(--carrev-blue);
+
+  color: #ffffff;
+
+  background:
+    rgba(
+      29,
+      92,
+      255,
+      0.08
+    );
+}
+
+/* =========================================================
+   FORMULÁRIOS
+========================================================= */
+
+.carrev-form-card {
+  margin-bottom: 18px;
+
+  padding: 20px;
+
+  display: grid;
+
+  gap: 14px;
+
+  border:
+    1px solid
+    #29313d;
+
+  border-radius: 18px;
+
+  background:
+    #11161e;
+
+  color: #ffffff;
+}
+
+.carrev-form-title {
+  color: #ffffff;
+
+  font-size: 19px;
+
+  font-weight: 800;
+}
+
+.carrev-form-grid {
+  display: grid;
+
+  gap: 12px;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(
+        180px,
+        1fr
+      )
+    );
+}
+
+.carrev-form-actions {
+  display: flex;
+
+  gap: 10px;
+
+  flex-wrap: wrap;
+}
+
+.carrev-form-card label {
+  display: grid;
+
+  gap: 6px;
+
+  color: #adb5c1;
+
+  font-size: 13px;
+}
+
+.carrev-form-card input,
+.carrev-form-card select {
+  width: 100%;
+
+  min-height: 42px;
+}
+
+/* =========================================================
+   DOCUMENTOS
+========================================================= */
+
+.documentos-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(
+        0,
+        1fr
+      )
+    );
+
+  gap: 14px;
+
+  margin-top: 10px;
+}
+
+.documento-card {
+  padding: 18px;
+
+  border:
+    1px solid
+    #272e39;
+
+  border-radius: 16px;
+
+  background:
+    #0f1319;
+
+  color: #ffffff;
+
+  text-decoration: none;
+
+  box-shadow:
+    0 6px 20px
+    rgba(0, 0, 0, 0.16);
+}
+
+.documento-card:hover {
+  border-color:
+    #3b4655;
+}
+
+.documento-cabecalho {
+  display: flex;
+
+  align-items: center;
+
+  gap: 14px;
+}
+
+.documento-cabecalho strong {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #ffffff;
+
+  font-size: 17px;
+}
+
+.documento-subtitulo {
+  color: #abb3bf;
+
+  font-size: 13px;
+
+  line-height: 1.4;
+}
+
+/* =========================================================
+   ÍCONES DOCUMENTOS
+========================================================= */
+
+.documento-icone {
+  width: 58px;
+  height: 58px;
+
+  min-width: 58px;
+
+  border-radius: 12px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-weight: 800;
+}
+
+.pdf-icone {
+  background:
+    #a51f27;
+
+  color: #ffffff;
+
+  font-size: 15px;
+}
+
+.cnh-icone {
+  flex-direction: column;
+
+  background:
+    #f1f1f1;
+
+  color: #111111;
+
+  line-height: 1;
+}
+
+.cnh-icone span {
+  font-size: 15px;
+
+  font-weight: 850;
+}
+
+.cnh-icone small {
+  margin-top: 4px;
+
+  font-size: 8px;
+
+  letter-spacing: 0.5px;
+}
+
+/* =========================================================
+   UPLOAD PDF
+========================================================= */
+
+.upload-pdf {
+  display: flex;
+
+  flex-direction: column;
+
+  margin-top: 16px;
+
+  padding: 16px;
+
+  border:
+    1px dashed
+    #596372;
+
+  border-radius: 11px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.015
+    );
+
+  cursor: pointer;
+
+  transition:
+    0.2s;
+}
+
+.upload-pdf:hover {
+  border-color:
+    var(--carrev-blue);
+
+  background:
+    rgba(
+      29,
+      92,
+      255,
+      0.05
+    );
+}
+
+.upload-pdf-titulo {
+  margin-bottom: 4px;
+
+  color: #ffffff;
+
+  font-weight: 750;
+}
+
+.upload-pdf-texto {
+  color: #9ca5b3;
+
+  font-size: 13px;
+}
+
+/* =========================================================
+   PDF SALVO
+========================================================= */
+
+.documento-arquivo {
+  margin-top: 16px;
+
+  padding: 14px;
+
+  border-radius: 11px;
+
+  background:
+    #181d25;
+}
+
+.documento-meta {
+  margin-top: 4px;
+
+  color: #8e98a7;
+
+  font-size: 12px;
+}
+
+.documento-acoes {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  margin-top: 14px;
+}
+
+/* =========================================================
+   BOTÕES DOCUMENTOS
+========================================================= */
+
+.botao-link {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding:
+    9px
+    13px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  background:
+    #f3f3f3;
+
+  color: #111111;
+
+  font-size: 13px;
+
+  font-weight: 650;
+
+  text-decoration: none;
+
+  cursor: pointer;
+}
+
+.botao-link:hover {
+  background:
+    #dcdcdc;
+
+  color: #111;
+}
+
+.botao-link.secundario {
+  background:
+    #303640;
+
+  color: #ffffff;
+}
+
+.botao-link.secundario:hover {
+  background:
+    #404854;
+}
+
+.botao-link.perigo {
+  background:
+    #681d24;
+
+  color: #ffffff;
+}
+
+.botao-link.perigo:hover {
+  background:
+    #86252e;
+}
+
+/* =========================================================
+   CNH
+========================================================= */
+
+.cnh-card {
+  width: 100%;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: space-between;
+
+  text-align: left;
+
+  font: inherit;
+
+  cursor: pointer;
+}
+
+.cnh-acao {
+  margin-top: 20px;
+
+  color: #ffffff;
+
+  font-size: 13px;
+
+  font-weight: 750;
+}
+
+/* =========================================================
+   AVISO DOCUMENTOS
+========================================================= */
+
+.documentos-aviso {
+  margin-top: 14px;
+
+  padding:
+    12px
+    14px;
+
+  border:
+    1px solid
+    #242c36;
+
+  border-radius: 11px;
+
+  background:
+    #10151c;
+
+  color: #929cab;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+/* =========================================================
+   TABLETS E CELULARES
+========================================================= */
+
+@media (max-width: 700px) {
+
+  html,
+  body,
+  #root {
+    width: 100%;
+
+    min-height: 100vh;
+    min-height: 100dvh;
+
+    background:
+      var(--carrev-bg);
+  }
+
+  body {
+    padding: 0;
+  }
+
+  .carrev-home {
+    padding-top:
+      calc(
+        18px +
+        env(
+          safe-area-inset-top
+        )
+      );
+
+    padding-left:
+      calc(
+        14px +
+        env(
+          safe-area-inset-left
+        )
+      );
+
+    padding-right:
+      calc(
+        14px +
+        env(
+          safe-area-inset-right
+        )
+      );
+
+    padding-bottom:
+      calc(
+        42px +
+        env(
+          safe-area-inset-bottom
+        )
+      );
+  }
+
+  /* LOGO */
+
+  .carrev-home-header {
+    padding-top: 8px;
+
+    padding-bottom: 25px;
+  }
+
+  .carrev-logo {
+    font-size: 33px;
+  }
+
+  .carrev-tagline {
+    font-size: 13px;
+  }
+
+  /* GARAGEM */
+
+  .carrev-garagem-header {
+    align-items:
+      flex-start;
+  }
+
+  .carrev-garagem-title {
+    font-size: 28px;
+  }
+
+  .carrev-add-button {
+    min-height: 42px;
+
+    padding:
+      0
+      13px;
+
+    font-size: 12px;
+  }
+
+  /* RESUMO DA GARAGEM */
+
+  .carrev-resumo {
+    padding: 15px;
+  }
+
+  .carrev-resumo-grid {
+    grid-template-columns:
+      1fr
+      1fr;
+  }
+
+  .carrev-resumo-card {
+    padding:
+      15px
+      8px;
+  }
+
+  .carrev-resumo-numero {
+    font-size: 25px;
+  }
+
+  .carrev-resumo-icon {
+    width: 44px;
+    height: 44px;
+
+    font-size: 20px;
+  }
+
+  /* CARRO */
+
+  .carrev-car-card {
+    min-height: 475px;
+
+    border-radius: 22px;
+  }
+
+  .carrev-car-content {
+    min-height: 475px;
+
+    padding: 21px;
+  }
+
+  .carrev-car-name {
+    font-size: 31px;
+  }
+
+  .carrev-car-bottom {
+    align-items: stretch;
+
+    flex-direction: column;
+  }
+
+  .carrev-primary-button {
+    width: 100%;
+  }
+
+  .carrev-secondary-actions {
+    display: grid;
+
+    grid-template-columns:
+      1fr
+      1fr;
+  }
+
+  .carrev-secondary-actions button {
+    width: 100%;
+  }
+
+  .carrev-car-placeholder {
+    padding-bottom: 155px;
+  }
+
+  /* DOCUMENTOS */
+
+  .documentos-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .documento-acoes {
+    flex-direction: column;
+  }
+
+  .botao-link {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   IPHONES MENORES
+========================================================= */
+
+@media (max-width: 430px) {
+
+  .carrev-garagem-header {
+    display: grid;
+
+    grid-template-columns:
+      1fr;
+
+    gap: 14px;
+  }
+
+  .carrev-add-button {
+    width: 100%;
+  }
+
+  .carrev-garagem-section {
+    margin-bottom: 18px;
+  }
+
+  /* RESUMO */
+
+  .carrev-resumo {
+    padding: 14px;
+
+    border-radius: 18px;
+  }
+
+  .carrev-resumo-header {
+    margin-bottom: 14px;
+  }
+
+  .carrev-resumo-title {
+    font-size: 17px;
+  }
+
+  .carrev-resumo-grid {
+    grid-template-columns:
+      1fr
+      1fr;
+
+    gap: 8px;
+  }
+
+  .carrev-resumo-card {
+    padding:
+      14px
+      6px;
+
+    border-radius: 14px;
+  }
+
+  .carrev-resumo-numero {
+    font-size: 24px;
+  }
+
+  .carrev-resumo-label {
+    font-size: 11px;
+  }
+
+  /* CARRO */
+
+  .carrev-car-card {
+    min-height: 465px;
+  }
+
+  .carrev-car-content {
+    min-height: 465px;
+
+    padding: 19px;
+  }
+
+  .carrev-car-name {
+    font-size: 29px;
+  }
+
+  .carrev-car-model {
+    font-size: 13px;
+  }
+
+  .carrev-car-km {
+    font-size: 14px;
+  }
+
+  .carrev-car-status {
+    font-size: 14px;
+  }
+
+  .carrev-secondary-actions {
+    grid-template-columns:
+      1fr
+      1fr;
+  }
+}
+/* =========================================================
+   CARREV - ALERTAS PREMIUM DA HOME
+========================================================= */
+
+.carrev-alertas-wrap {
+  display: grid;
+  gap: 10px;
+}
+
+.carrev-alert-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  padding: 16px 18px;
+
+  border-radius: 18px;
+
+  border: 1px solid #242c36;
+
+  background:
+    linear-gradient(
+      145deg,
+      #10151c,
+      #0b0f15
+    );
+
+  box-shadow:
+    0 8px 24px
+    rgba(0, 0, 0, 0.16);
+}
+
+.carrev-alert-panel.ok {
+  border-color:
+    rgba(34, 197, 94, 0.24);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(34, 197, 94, 0.08),
+      #0b0f15 55%
+    );
+}
+
+.carrev-alert-panel.breve {
+  border-color:
+    rgba(245, 158, 11, 0.28);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(245, 158, 11, 0.08),
+      #0b0f15 55%
+    );
+}
+
+.carrev-alert-panel.vencida {
+  border-color:
+    rgba(239, 68, 68, 0.3);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(239, 68, 68, 0.09),
+      #0b0f15 55%
+    );
+}
+
+.carrev-alert-main {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+}
+
+.carrev-alert-icon {
+  width: 46px;
+  height: 46px;
+
+  min-width: 46px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.carrev-alert-panel.ok
+.carrev-alert-icon {
+  background:
+    rgba(34, 197, 94, 0.14);
+
+  color:
+    var(--carrev-green);
+}
+
+.carrev-alert-panel.breve
+.carrev-alert-icon {
+  background:
+    rgba(245, 158, 11, 0.14);
+
+  color:
+    var(--carrev-yellow);
+}
+
+.carrev-alert-panel.vencida
+.carrev-alert-icon {
+  background:
+    rgba(239, 68, 68, 0.14);
+
+  color:
+    var(--carrev-red);
+}
+
+.carrev-alert-title {
+  color: #ffffff;
+
+  font-size: 16px;
+
+  font-weight: 800;
+}
+
+.carrev-alert-description {
+  margin-top: 3px;
+
+  color: #939dac;
+
+  font-size: 12px;
+}
+
+.carrev-alert-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  flex-wrap: wrap;
+}
+
+.carrev-alert-refresh,
+.carrev-alert-link {
+  min-height: 38px;
+
+  padding:
+    8px
+    12px;
+
+  font-size: 12px;
+
+  border-radius: 10px;
+}
+
+.carrev-alert-refresh {
+  background: #121821;
+
+  color: #aeb6c2;
+}
+
+.carrev-alert-link {
+  border-color:
+    rgba(29, 92, 255, 0.4);
+
+  background:
+    rgba(29, 92, 255, 0.1);
+
+  color:
+    #6993ff;
+}
+
+/* LISTA DE ALERTAS */
+
+.carrev-alert-list {
+  display: grid;
+
+  gap: 9px;
+}
+
+.carrev-alert-item {
+  padding: 14px;
+
+  border:
+    1px solid
+    #242c36;
+
+  border-radius: 15px;
+
+  background:
+    #0d1218;
+}
+
+.carrev-alert-item.vencida {
+  border-left:
+    3px solid
+    var(--carrev-red);
+}
+
+.carrev-alert-item.breve {
+  border-left:
+    3px solid
+    var(--carrev-yellow);
+}
+
+.carrev-alert-item-top {
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    flex-start;
+
+  gap: 12px;
+}
+
+.carrev-alert-car {
+  color: #ffffff;
+
+  font-size: 14px;
+
+  font-weight: 800;
+}
+
+.carrev-alert-service {
+  margin-top: 2px;
+
+  color: #9ba4b2;
+
+  font-size: 12px;
+}
+
+.carrev-alert-badge {
+  display: inline-flex;
+
+  align-items: center;
+
+  min-height: 25px;
+
+  padding:
+    3px
+    8px;
+
+  border-radius: 999px;
+
+  font-size: 10px;
+
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+.carrev-alert-badge.vencida {
+  background:
+    rgba(239, 68, 68, 0.12);
+
+  color:
+    var(--carrev-red);
+}
+
+.carrev-alert-badge.breve {
+  background:
+    rgba(245, 158, 11, 0.12);
+
+  color:
+    var(--carrev-yellow);
+}
+
+.carrev-alert-meta {
+  display: flex;
+
+  gap:
+    6px
+    12px;
+
+  flex-wrap: wrap;
+
+  margin-top: 10px;
+
+  color: #8f99a7;
+
+  font-size: 11px;
+}
+
+.carrev-alert-item-actions {
+  display: flex;
+
+  gap: 8px;
+
+  flex-wrap: wrap;
+
+  margin-top: 11px;
+}
+
+.carrev-alert-item-actions button {
+  padding:
+    7px
+    10px;
+
+  font-size: 11px;
+
+  border-radius: 8px;
+
+  background:
+    #141a22;
+}
+
+/* CELULAR */
+
+@media (max-width: 700px) {
+
+  .carrev-alert-panel {
+    align-items: stretch;
+
+    flex-direction: column;
+
+    padding: 15px;
+  }
+
+  .carrev-alert-actions {
+    display: grid;
+
+    grid-template-columns:
+      1fr
+      1fr;
+  }
+
+  .carrev-alert-refresh,
+  .carrev-alert-link {
+    width: 100%;
+  }
+
+  .carrev-alert-item-actions {
+    display: grid;
+
+    grid-template-columns:
+      1fr
+      1fr;
+  }
+
+  .carrev-alert-item-actions button {
+    width: 100%;
+  }
+}
+/* RESUMO DA GARAGEM - CARDS CLICÁVEIS */
+
+.carrev-resumo-card {
+  cursor: pointer;
+  width: 100%;
+  font-family: inherit;
+}
+
+.carrev-resumo-card:hover {
+  transform: translateY(-2px);
+  border-color: #3a4657;
+}
+
+.carrev-resumo-card:active {
+  transform: scale(0.98);
+}
+
+.carrev-resumo-card:focus-visible {
+  outline: 2px solid var(--carrev-blue);
+  outline-offset: 2px;
+}
+/* =========================================================
+   ABASTECIMENTOS
+========================================================= */
+
+.carrev-abastecimento-page {
+  width: 100%;
+  max-width: 980px;
+
+  margin: 0 auto;
+
+  padding: 22px 16px 48px;
+
+  color: #ffffff;
+
+  background: var(--carrev-bg);
+}
+
+.carrev-abastecimento-top {
+  margin-bottom: 22px;
+}
+
+.carrev-back-button {
+  margin-bottom: 18px;
+
+  background: #10161e;
+
+  color: #b8c0cb;
+}
+
+.carrev-abastecimento-header h1 {
+  margin: 2px 0 0;
+
+  font-size: 32px;
+
   line-height: 1.1;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.carrev-abastecimento-kicker {
+  color: var(--carrev-blue-light);
+
+  font-size: 12px;
+
+  font-weight: 800;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.8px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+.carrev-abastecimento-subtitle {
+  margin-top: 7px;
+
+  color: #8d97a6;
+
+  font-size: 13px;
+}
+
+/* RESUMO */
+
+.carrev-abastecimento-resumo {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px;
+
+  margin-bottom: 18px;
+}
+
+.carrev-consumo-card {
+  min-width: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
+  padding: 16px;
+
+  border: 1px solid #242d38;
+
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #111720,
+      #0b1016
+    );
+}
+
+.carrev-consumo-icon {
+  width: 42px;
+  height: 42px;
+
+  min-width: 42px;
+
+  display: grid;
+
+  place-items: center;
+
+  border-radius: 50%;
+
+  background:
+    rgba(29, 92, 255, 0.13);
+
+  font-size: 18px;
+}
+
+.carrev-consumo-label {
+  color: #8f99a7;
+
+  font-size: 11px;
+}
+
+.carrev-consumo-value {
+  margin-top: 3px;
+
+  color: #ffffff;
+
+  font-size: 20px;
+
+  font-weight: 800;
+}
+
+/* CARDS */
+
+.carrev-abastecimento-card {
+  margin-bottom: 16px;
+
+  padding: 18px;
+
+  border: 1px solid #242d38;
+
+  border-radius: 18px;
+
+  background:
+    #0d1219;
+}
+
+.carrev-section-header {
+  margin-bottom: 16px;
+}
+
+.carrev-section-header h2 {
+  margin: 0;
+
+  font-size: 18px;
+}
+
+.carrev-section-header p {
+  margin:
+    4px
+    0
+    0;
+
+  color: #8993a2;
+
+  font-size: 12px;
+}
+
+/* FORMULÁRIO */
+
+.carrev-abastecimento-form {
+  display: grid;
+
+  gap: 16px;
+}
+
+.carrev-abastecimento-form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px;
+}
+
+.carrev-abastecimento-form-grid label {
+  min-width: 0;
+
+  display: grid;
+
+  gap: 6px;
+
+  color: #abb4c0;
+
+  font-size: 12px;
+}
+
+.carrev-abastecimento-form-grid input {
+  width: 100%;
+
+  min-width: 0;
+}
+
+.carrev-form-span-2 {
+  grid-column:
+    span 2;
+}
+
+.carrev-checkbox-row {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 10px;
+
+  padding: 13px;
+
+  border: 1px solid #242c36;
+
+  border-radius: 12px;
+
+  background: #10161e;
+
+  cursor: pointer;
+}
+
+.carrev-checkbox-row input {
+  width: auto;
+
+  margin-top: 3px;
+}
+
+.carrev-checkbox-row strong {
+  display: block;
+
+  color: #ffffff;
+
+  font-size: 13px;
+}
+
+.carrev-checkbox-row span {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #8993a1;
+
+  font-size: 11px;
+}
+
+/* HISTÓRICO */
+
+.carrev-abastecimento-lista,
+.carrev-consumo-lista {
+  display: grid;
+
+  gap: 10px;
+}
+
+.carrev-abastecimento-item,
+.carrev-consumo-item {
+  min-width: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 14px;
+
+  padding: 14px;
+
+  border: 1px solid #232b35;
+
+  border-radius: 14px;
+
+  background: #10161d;
+}
+
+.carrev-abastecimento-item-main {
+  min-width: 0;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 12px;
+}
+
+.carrev-abastecimento-item-icon {
+  width: 38px;
+  height: 38px;
+
+  min-width: 38px;
+
+  display: grid;
+
+  place-items: center;
+
+  border-radius: 50%;
+
+  background:
+    rgba(29, 92, 255, 0.12);
+}
+
+.carrev-abastecimento-item-title {
+  color: #ffffff;
+
+  font-size: 14px;
+
+  font-weight: 800;
+}
+
+.carrev-abastecimento-item-info {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap:
+    4px
+    10px;
+
+  margin-top: 5px;
+
+  color: #9ca5b2;
+
+  font-size: 11px;
+}
+
+.carrev-abastecimento-tanque {
+  margin-top: 5px;
+
+  color: #6f7a89;
+
+  font-size: 10px;
+}
+
+.carrev-danger-button {
+  flex-shrink: 0;
+
+  border-color:
+    rgba(
+      239,
+      68,
+      68,
+      0.35
+    );
+
+  background:
+    rgba(
+      239,
+      68,
+      68,
+      0.08
+    );
+
+  color: #ef4444;
+}
+
+/* CONSUMO */
+
+.carrev-consumo-item-title {
+  color: #ffffff;
+
+  font-size: 13px;
+
+  font-weight: 750;
+}
+
+.carrev-consumo-item-meta {
+  margin-top: 4px;
+
+  color: #8993a1;
+
+  font-size: 11px;
+}
+
+.carrev-consumo-item-result {
+  flex-shrink: 0;
+
+  text-align: right;
+}
+
+.carrev-consumo-item-result strong {
+  display: block;
+
+  color: #22c55e;
+
+  font-size: 14px;
+}
+
+.carrev-consumo-item-result span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #828c99;
+
+  font-size: 10px;
+}
+
+.carrev-empty-card {
+  padding: 16px;
+
+  border: 1px dashed #2e3845;
+
+  border-radius: 12px;
+
+  color: #8c96a4;
+
+  background: #0c1117;
+
+  font-size: 12px;
+}
+
+/* =========================================================
+   ABASTECIMENTO - CELULAR
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .carrev-abastecimento-page {
+    padding-top:
+      calc(
+        18px +
+        env(
+          safe-area-inset-top
+        )
+      );
+
+    padding-left:
+      calc(
+        14px +
+        env(
+          safe-area-inset-left
+        )
+      );
+
+    padding-right:
+      calc(
+        14px +
+        env(
+          safe-area-inset-right
+        )
+      );
+
+    padding-bottom:
+      calc(
+        42px +
+        env(
+          safe-area-inset-bottom
+        )
+      );
   }
-  a:hover {
-    color: #747bff;
+
+  .carrev-abastecimento-header h1 {
+    font-size: 28px;
   }
-  button {
-    background-color: #f9f9f9;
+
+  .carrev-abastecimento-resumo {
+    grid-template-columns:
+      1fr;
+  }
+
+  .carrev-abastecimento-form-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .carrev-form-span-2 {
+    grid-column:
+      auto;
+  }
+
+  .carrev-abastecimento-item,
+  .carrev-consumo-item {
+    align-items: stretch;
+
+    flex-direction: column;
+  }
+
+  .carrev-danger-button {
+    width: 100%;
+  }
+
+  .carrev-consumo-item-result {
+    text-align: left;
   }
 }

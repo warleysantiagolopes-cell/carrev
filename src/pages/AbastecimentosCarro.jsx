@@ -1,5 +1,8 @@
+// src/pages/AbastecimentosCarro.jsx
+
 import { useEffect, useMemo, useState } from "react";
 import { db } from "../db/db";
+import { atualizarFipeDoCarro } from "../services/fipe";
 
 function hojeISO() {
   return new Date().toISOString().slice(0, 10);
@@ -15,11 +18,34 @@ function formatarNumero(n, casas = 2) {
   return n.toFixed(casas);
 }
 
-export default function AbastecimentosCarro({ carId, aoVoltar }) {
+function formatarKm(n) {
+  if (n == null || !Number.isFinite(Number(n))) return "—";
+  return Number(n).toLocaleString("pt-BR");
+}
+
+function formatarData(data) {
+  if (!data) return "—";
+
+  const [ano, mes, dia] = String(data).split("-");
+
+  if (!ano || !mes || !dia) return data;
+
+  return `${dia}/${mes}/${ano}`;
+}
+
+export default function AbastecimentosCarro({
+  carId,
+  aoVoltar,
+}) {
   const [carro, setCarro] = useState(null);
   const [historico, setHistorico] = useState([]);
 
-  // Formulário
+  const [salvando, setSalvando] = useState(false);
+
+  /* ==================================================
+     FORMULÁRIO
+  ================================================== */
+
   const [data, setData] = useState(hojeISO());
   const [km, setKm] = useState("");
   const [litros, setLitros] = useState("");
@@ -29,6 +55,7 @@ export default function AbastecimentosCarro({ carId, aoVoltar }) {
 
   async function carregar() {
     const c = await db.cars.get(Number(carId));
+
     setCarro(c || null);
 
     const lista = await db.abastecimentos
@@ -36,80 +63,237 @@ export default function AbastecimentosCarro({ carId, aoVoltar }) {
       .equals(Number(carId))
       .toArray();
 
-    lista.sort((a, b) => (a.km || 0) - (b.km || 0));
+    lista.sort(
+      (a, b) =>
+        (a.km || 0) -
+        (b.km || 0)
+    );
+
     setHistorico(lista);
   }
 
   useEffect(() => {
     carregar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [carId]);
+
+  /* ==================================================
+     SALVAR
+  ================================================== */
 
   async function salvarAbastecimento(e) {
     e.preventDefault();
 
     const kmNum = numeroSeguro(km);
     const litrosNum = numeroSeguro(litros);
-    const precoNum = precoTotal.trim() === "" ? null : numeroSeguro(precoTotal);
 
-    if (kmNum == null || kmNum < 0) return;
-    if (litrosNum == null || litrosNum <= 0) return;
-    if (precoNum != null && precoNum < 0) return;
+    const precoNum =
+      precoTotal.trim() === ""
+        ? null
+        : numeroSeguro(precoTotal);
 
-    await db.abastecimentos.add({
-      carId: Number(carId),
-      data,
-      km: kmNum,
-      litros: litrosNum,
-      precoTotal: precoNum,
-      local: (local || "").trim(),
-      tanqueCheio: Boolean(tanqueCheio),
-      criadoEm: new Date().toISOString(),
-    });
-
-    // Atualiza km atual do carro (se maior)
-    if (carro) {
-      const kmAtual =
-        typeof carro.currentMileage === "number" ? carro.currentMileage : null;
-
-      if (kmAtual == null || kmNum > kmAtual) {
-        await db.cars.update(Number(carId), { currentMileage: kmNum });
-      }
+    if (kmNum == null || kmNum < 0) {
+      alert("Informe uma quilometragem válida.");
+      return;
     }
 
-    // Limpa campos
-    setKm("");
-    setLitros("");
-    setPrecoTotal("");
-    setLocal("");
-    setTanqueCheio(true);
+    if (litrosNum == null || litrosNum <= 0) {
+      alert("Informe uma quantidade de litros válida.");
+      return;
+    }
 
-    await carregar();
+    if (precoNum != null && precoNum < 0) {
+      alert("Informe um valor válido.");
+      return;
+    }
+
+    setSalvando(true);
+
+    let kmFoiAtualizado = false;
+    let fipeFoiAtualizada = false;
+    let fipeFalhou = false;
+
+    try {
+      await db.abastecimentos.add({
+        carId: Number(carId),
+        data,
+        km: kmNum,
+        litros: litrosNum,
+        precoTotal: precoNum,
+        local: (local || "").trim(),
+        tanqueCheio: Boolean(tanqueCheio),
+        criadoEm: new Date().toISOString(),
+      });
+
+      /* ==================================================
+         ATUALIZA KM ATUAL
+      ================================================== */
+
+      if (carro) {
+        const kmAtual =
+          typeof carro.currentMileage === "number"
+            ? carro.currentMileage
+            : null;
+
+        if (
+          kmAtual == null ||
+          kmNum > kmAtual
+        ) {
+          await db.cars.update(
+            Number(carId),
+            {
+              currentMileage: kmNum,
+            }
+          );
+
+          kmFoiAtualizado = true;
+
+          /* ==================================================
+             ATUALIZA FIPE AUTOMATICAMENTE
+          ================================================== */
+
+          if (
+            carro.fipeCode &&
+            carro.fipeYearId
+          ) {
+            const carroComNovaKm = {
+              ...carro,
+              currentMileage: kmNum,
+            };
+
+            const resultadoFipe =
+              await atualizarFipeDoCarro(
+                carroComNovaKm,
+                db
+              );
+
+            if (resultadoFipe?.atualizado) {
+              fipeFoiAtualizada = true;
+            } else {
+              fipeFalhou = true;
+
+              console.warn(
+                "A quilometragem foi atualizada, mas a FIPE não pôde ser atualizada:",
+                resultadoFipe?.motivo
+              );
+            }
+          }
+        }
+      }
+
+      /* ==================================================
+         LIMPA FORMULÁRIO
+      ================================================== */
+
+      setKm("");
+      setLitros("");
+      setPrecoTotal("");
+      setLocal("");
+      setTanqueCheio(true);
+
+      await carregar();
+
+      /* ==================================================
+         AVISO FINAL
+      ================================================== */
+
+      if (kmFoiAtualizado) {
+        let mensagem =
+          `Abastecimento salvo com sucesso.\n\n` +
+          `A quilometragem atual do veículo foi atualizada para ${kmNum.toLocaleString(
+            "pt-BR"
+          )} km.\n\n` +
+          `O controle de revisões passará a usar essa nova quilometragem.`;
+
+        if (fipeFoiAtualizada) {
+          mensagem +=
+            `\n\nA Tabela FIPE também foi atualizada automaticamente.`;
+        }
+
+        if (fipeFalhou) {
+          mensagem +=
+            `\n\nA quilometragem foi atualizada, mas não foi possível atualizar a FIPE neste momento.`;
+        }
+
+        alert(mensagem);
+      } else {
+        alert("Abastecimento salvo com sucesso.");
+      }
+
+    } catch (erro) {
+      console.error(
+        "Erro ao salvar abastecimento:",
+        erro
+      );
+
+      alert(
+        "Não foi possível salvar o abastecimento."
+      );
+    } finally {
+      setSalvando(false);
+    }
   }
+
+  /* ==================================================
+     EXCLUIR
+  ================================================== */
 
   async function excluirAbastecimento(id) {
+    const ok = window.confirm(
+      "Excluir este abastecimento?"
+    );
+
+    if (!ok) return;
+
     await db.abastecimentos.delete(id);
+
     await carregar();
   }
 
-  // ===== Consumo (entre tanques cheios) =====
+  /* ==================================================
+     CONSUMO
+  ================================================== */
+
   const consumo = useMemo(() => {
     const cheios = historico
       .filter((a) => a.tanqueCheio)
       .slice()
-      .sort((a, b) => (a.km || 0) - (b.km || 0));
+      .sort(
+        (a, b) =>
+          (a.km || 0) -
+          (b.km || 0)
+      );
 
     const trechos = [];
-    for (let i = 1; i < cheios.length; i++) {
-      const anterior = cheios[i - 1];
-      const atual = cheios[i];
 
-      const distancia = (atual.km || 0) - (anterior.km || 0);
-      const litrosUsados = Number(atual.litros);
+    for (
+      let i = 1;
+      i < cheios.length;
+      i++
+    ) {
+      const anterior =
+        cheios[i - 1];
 
-      if (distancia > 0 && Number.isFinite(litrosUsados) && litrosUsados > 0) {
-        const kmPorLitro = distancia / litrosUsados;
-        const litrosPor100 = (litrosUsados / distancia) * 100;
+      const atual =
+        cheios[i];
+
+      const distancia =
+        (atual.km || 0) -
+        (anterior.km || 0);
+
+      const litrosUsados =
+        Number(atual.litros);
+
+      if (
+        distancia > 0 &&
+        Number.isFinite(litrosUsados) &&
+        litrosUsados > 0
+      ) {
+        const kmPorLitro =
+          distancia / litrosUsados;
+
+        const litrosPor100 =
+          (litrosUsados / distancia) *
+          100;
 
         trechos.push({
           data: atual.data,
@@ -123,237 +307,552 @@ export default function AbastecimentosCarro({ carId, aoVoltar }) {
       }
     }
 
-    const ultimo = trechos.length ? trechos[trechos.length - 1] : null;
-    const mediaKmL =
+    const ultimo =
       trechos.length
-        ? trechos.reduce((s, t) => s + t.kmPorLitro, 0) / trechos.length
+        ? trechos[
+            trechos.length - 1
+          ]
         : null;
 
-    return { trechos, ultimo, mediaKmL };
+    const mediaKmL =
+      trechos.length
+        ? trechos.reduce(
+            (s, t) =>
+              s + t.kmPorLitro,
+            0
+          ) / trechos.length
+        : null;
+
+    return {
+      trechos,
+      ultimo,
+      mediaKmL,
+    };
   }, [historico]);
+
+  /* ==================================================
+     CARRO NÃO ENCONTRADO
+  ================================================== */
 
   if (!carro) {
     return (
-      <div style={{ padding: 16 }}>
-        <button onClick={aoVoltar}>Voltar</button>
-        <p style={{ marginTop: 12 }}>Carro não encontrado.</p>
+      <div className="carrev-abastecimento-page">
+
+        <button
+          type="button"
+          className="carrev-back-button"
+          onClick={aoVoltar}
+        >
+          ← Voltar
+        </button>
+
+        <div className="carrev-empty-card">
+          Carro não encontrado.
+        </div>
+
       </div>
     );
   }
 
+  /* ==================================================
+     TELA
+  ================================================== */
+
   return (
-    <div style={{ padding: 16 }}>
-      <button onClick={aoVoltar}>Voltar</button>
+    <div className="carrev-abastecimento-page">
 
-      <h2 style={{ marginTop: 12 }}>Abastecer — {carro.name}</h2>
+      {/* TOPO */}
 
-      <div style={{ marginTop: 8, fontSize: 13 }}>
-        <div>
-          <b>Último consumo:</b>{" "}
-          {consumo.ultimo ? `${formatarNumero(consumo.ultimo.kmPorLitro)} km/L` : "—"}
+      <div className="carrev-abastecimento-top">
+
+        <button
+          type="button"
+          className="carrev-back-button"
+          onClick={aoVoltar}
+        >
+          ← Voltar
+        </button>
+
+        <div className="carrev-abastecimento-header">
+
+          <div>
+
+            <div className="carrev-abastecimento-kicker">
+              Abastecimento
+            </div>
+
+            <h1>
+              {carro.name}
+            </h1>
+
+            <div className="carrev-abastecimento-subtitle">
+              Registre abastecimentos e acompanhe o consumo do veículo.
+            </div>
+
+          </div>
+
         </div>
-        <div>
-          <b>Média (tanque cheio):</b>{" "}
-          {consumo.mediaKmL != null ? `${formatarNumero(consumo.mediaKmL)} km/L` : "—"}
-        </div>
+
       </div>
 
-      {/* Formulário */}
-      <div
-        style={{
-          marginTop: 12,
-          border: "1px solid #ddd",
-          borderRadius: 12,
-          padding: 12,
-        }}
-      >
+      {/* ==================================================
+          RESUMO
+      ================================================== */}
+
+      <section className="carrev-abastecimento-resumo">
+
+        <div className="carrev-consumo-card">
+
+          <div className="carrev-consumo-icon">
+            ⛽
+          </div>
+
+          <div>
+
+            <div className="carrev-consumo-label">
+              Último consumo
+            </div>
+
+            <div className="carrev-consumo-value">
+              {consumo.ultimo
+                ? `${formatarNumero(
+                    consumo.ultimo.kmPorLitro
+                  )} km/L`
+                : "—"}
+            </div>
+
+          </div>
+
+        </div>
+
+        <div className="carrev-consumo-card">
+
+          <div className="carrev-consumo-icon">
+            ◎
+          </div>
+
+          <div>
+
+            <div className="carrev-consumo-label">
+              Média
+            </div>
+
+            <div className="carrev-consumo-value">
+              {consumo.mediaKmL != null
+                ? `${formatarNumero(
+                    consumo.mediaKmL
+                  )} km/L`
+                : "—"}
+            </div>
+
+          </div>
+
+        </div>
+
+        <div className="carrev-consumo-card">
+
+          <div className="carrev-consumo-icon">
+            ▤
+          </div>
+
+          <div>
+
+            <div className="carrev-consumo-label">
+              Registros
+            </div>
+
+            <div className="carrev-consumo-value">
+              {historico.length}
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ==================================================
+          NOVO ABASTECIMENTO
+      ================================================== */}
+
+      <section className="carrev-abastecimento-card">
+
+        <div className="carrev-section-header">
+
+          <div>
+
+            <h2>
+              Novo abastecimento
+            </h2>
+
+            <p>
+              Preencha os dados do abastecimento.
+            </p>
+
+          </div>
+
+        </div>
+
         <form
           onSubmit={salvarAbastecimento}
-          style={{ display: "grid", gap: 10, maxWidth: 760 }}
+          className="carrev-abastecimento-form"
         >
-          <div
-            style={{
-              display: "grid",
-              gap: 10,
-              gridTemplateColumns: "1fr 1fr 1fr",
-            }}
-          >
+
+          <div className="carrev-abastecimento-form-grid">
+
             <label>
               Data
+
               <input
                 type="date"
                 value={data}
-                onChange={(e) => setData(e.target.value)}
+                onChange={(e) =>
+                  setData(e.target.value)
+                }
+                required
               />
             </label>
 
             <label>
-              Quilometragem (km)
+              Quilometragem
+
               <input
                 type="number"
                 inputMode="numeric"
                 value={km}
-                onChange={(e) => setKm(e.target.value)}
-                placeholder="ex.: 45210"
+                onChange={(e) =>
+                  setKm(e.target.value)
+                }
+                placeholder="Ex.: 45.210"
+                required
               />
             </label>
 
             <label>
               Litros abastecidos
+
               <input
                 type="number"
                 inputMode="decimal"
+                step="0.01"
                 value={litros}
-                onChange={(e) => setLitros(e.target.value)}
-                placeholder="ex.: 42.5"
+                onChange={(e) =>
+                  setLitros(e.target.value)
+                }
+                placeholder="Ex.: 42,50"
+                required
               />
             </label>
-          </div>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 10,
-              gridTemplateColumns: "1fr 1fr",
-            }}
-          >
             <label>
-              Preço total (opcional)
+              Preço total
+
               <input
                 type="number"
                 inputMode="decimal"
+                step="0.01"
                 value={precoTotal}
-                onChange={(e) => setPrecoTotal(e.target.value)}
-                placeholder="ex.: 260.00"
+                onChange={(e) =>
+                  setPrecoTotal(
+                    e.target.value
+                  )
+                }
+                placeholder="Ex.: 260,00"
               />
             </label>
 
-            <label>
-              Local (opcional)
+            <label className="carrev-form-span-2">
+              Posto / Local
+
               <input
                 value={local}
-                onChange={(e) => setLocal(e.target.value)}
-                placeholder="ex.: Posto X / Cidade"
+                onChange={(e) =>
+                  setLocal(e.target.value)
+                }
+                placeholder="Ex.: Posto X / Belo Horizonte"
               />
             </label>
+
           </div>
 
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <label className="carrev-checkbox-row">
+
             <input
               type="checkbox"
               checked={tanqueCheio}
-              onChange={(e) => setTanqueCheio(e.target.checked)}
+              onChange={(e) =>
+                setTanqueCheio(
+                  e.target.checked
+                )
+              }
             />
-            Encheu o tanque
+
+            <div>
+
+              <strong>
+                Encheu o tanque
+              </strong>
+
+              <span>
+                Use esta opção para calcular o consumo entre abastecimentos.
+              </span>
+
+            </div>
+
           </label>
 
-          <button type="submit">Salvar abastecimento</button>
-        </form>
-      </div>
+          <button
+            type="submit"
+            className="carrev-primary-button"
+            disabled={salvando}
+          >
+            {salvando
+              ? "Salvando..."
+              : "Salvar abastecimento"}
+          </button>
 
-      {/* Histórico */}
-      <div
-        style={{
-          marginTop: 14,
-          border: "1px solid #ddd",
-          borderRadius: 12,
-          padding: 12,
-        }}
-      >
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>Histórico</div>
+        </form>
+
+      </section>
+
+      {/* ==================================================
+          HISTÓRICO
+      ================================================== */}
+
+      <section className="carrev-abastecimento-card">
+
+        <div className="carrev-section-header">
+
+          <div>
+
+            <h2>
+              Histórico
+            </h2>
+
+            <p>
+              Abastecimentos registrados para este veículo.
+            </p>
+
+          </div>
+
+        </div>
 
         {historico.length === 0 ? (
-          <div style={{ fontSize: 13 }}>Nenhum abastecimento cadastrado.</div>
+
+          <div className="carrev-empty-card">
+            Nenhum abastecimento cadastrado.
+          </div>
+
         ) : (
-          <div style={{ display: "grid", gap: 10 }}>
+
+          <div className="carrev-abastecimento-lista">
+
             {historico
               .slice()
-              .sort((a, b) => (b.km || 0) - (a.km || 0))
+              .sort(
+                (a, b) =>
+                  (b.km || 0) -
+                  (a.km || 0)
+              )
               .map((a) => (
-                <div
+
+                <article
                   key={a.id}
-                  style={{
-                    border: "1px solid #eee",
-                    borderRadius: 10,
-                    padding: 10,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                  }}
+                  className="carrev-abastecimento-item"
                 >
-                  <div style={{ fontSize: 13 }}>
-                    <div>
-                      <b>Data:</b> {a.data || "—"} • <b>KM:</b> {a.km}
+
+                  <div className="carrev-abastecimento-item-main">
+
+                    <div className="carrev-abastecimento-item-icon">
+                      ⛽
                     </div>
+
                     <div>
-                      <b>Litros:</b> {a.litros} • <b>Tanque cheio:</b>{" "}
-                      {a.tanqueCheio ? "Sim" : "Não"}
-                      {a.precoTotal != null
-                        ? ` • R$ ${formatarNumero(Number(a.precoTotal), 2)}`
-                        : ""}
-                      {a.local ? ` • ${a.local}` : ""}
+
+                      <div className="carrev-abastecimento-item-title">
+                        {formatarData(
+                          a.data
+                        )}
+                      </div>
+
+                      <div className="carrev-abastecimento-item-info">
+
+                        <span>
+                          ◎{" "}
+                          {formatarKm(
+                            a.km
+                          )}{" "}
+                          km
+                        </span>
+
+                        <span>
+                          {formatarNumero(
+                            Number(
+                              a.litros
+                            )
+                          )}{" "}
+                          L
+                        </span>
+
+                        {a.precoTotal != null ? (
+                          <span>
+                            R${" "}
+                            {formatarNumero(
+                              Number(
+                                a.precoTotal
+                              ),
+                              2
+                            )}
+                          </span>
+                        ) : null}
+
+                        {a.local ? (
+                          <span>
+                            {a.local}
+                          </span>
+                        ) : null}
+
+                      </div>
+
+                      <div className="carrev-abastecimento-tanque">
+                        {a.tanqueCheio
+                          ? "Tanque cheio"
+                          : "Abastecimento parcial"}
+                      </div>
+
                     </div>
+
                   </div>
 
-                  <button onClick={() => excluirAbastecimento(a.id)}>
+                  <button
+                    type="button"
+                    className="carrev-danger-button"
+                    onClick={() =>
+                      excluirAbastecimento(
+                        a.id
+                      )
+                    }
+                  >
                     Excluir
                   </button>
-                </div>
-              ))}
-          </div>
-        )}
-      </div>
 
-      {/* Trechos de consumo */}
-      <div
-        style={{
-          marginTop: 14,
-          border: "1px solid #ddd",
-          borderRadius: 12,
-          padding: 12,
-        }}
-      >
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>
-          Consumo (entre abastecimentos com “tanque cheio”)
+                </article>
+
+              ))}
+
+          </div>
+
+        )}
+
+      </section>
+
+      {/* ==================================================
+          CONSUMO
+      ================================================== */}
+
+      <section className="carrev-abastecimento-card">
+
+        <div className="carrev-section-header">
+
+          <div>
+
+            <h2>
+              Consumo
+            </h2>
+
+            <p>
+              Calculado entre abastecimentos marcados como tanque cheio.
+            </p>
+
+          </div>
+
         </div>
 
         {consumo.trechos.length === 0 ? (
-          <div style={{ fontSize: 13 }}>
-            Para calcular, marque “Encheu o tanque” em pelo menos <b>dois</b>{" "}
-            abastecimentos.
+
+          <div className="carrev-empty-card">
+            Para calcular o consumo, marque
+            <strong>
+              {" "}“Encheu o tanque”
+            </strong>
+            {" "}em pelo menos dois abastecimentos.
           </div>
+
         ) : (
-          <div style={{ display: "grid", gap: 10 }}>
+
+          <div className="carrev-consumo-lista">
+
             {consumo.trechos
               .slice()
               .reverse()
               .map((t, idx) => (
-                <div
+
+                <article
                   key={idx}
-                  style={{
-                    border: "1px solid #eee",
-                    borderRadius: 10,
-                    padding: 10,
-                  }}
+                  className="carrev-consumo-item"
                 >
-                  <div style={{ fontSize: 13 }}>
-                    <div>
-                      <b>Trecho:</b> {t.deKm} → {t.paraKm} ({t.distancia} km) •{" "}
-                      <b>Litros:</b> {t.litrosUsados}
+
+                  <div>
+
+                    <div className="carrev-consumo-item-title">
+                      {formatarKm(
+                        t.deKm
+                      )}
+                      {" → "}
+                      {formatarKm(
+                        t.paraKm
+                      )}
+                      {" km"}
                     </div>
-                    <div>
-                      <b>Consumo:</b> {formatarNumero(t.kmPorLitro)} km/L •{" "}
-                      <b>{formatarNumero(t.litrosPor100)}</b> L/100 km
-                      {t.data ? ` • Data: ${t.data}` : ""}
+
+                    <div className="carrev-consumo-item-meta">
+                      {formatarKm(
+                        t.distancia
+                      )}
+                      {" km • "}
+
+                      {formatarNumero(
+                        t.litrosUsados
+                      )}
+                      {" L"}
+
+                      {t.data
+                        ? ` • ${formatarData(
+                            t.data
+                          )}`
+                        : ""}
                     </div>
+
                   </div>
-                </div>
+
+                  <div className="carrev-consumo-item-result">
+
+                    <strong>
+                      {formatarNumero(
+                        t.kmPorLitro
+                      )}{" "}
+                      km/L
+                    </strong>
+
+                    <span>
+                      {formatarNumero(
+                        t.litrosPor100
+                      )}{" "}
+                      L/100 km
+                    </span>
+
+                  </div>
+
+                </article>
+
               ))}
+
           </div>
+
         )}
-      </div>
+
+      </section>
+
     </div>
   );
 }
