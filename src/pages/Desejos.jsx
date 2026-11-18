@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { db } from "../db/db";
+import { useDb } from "../db/db";
 
 const PRIORIDADES = ["Baixa", "Média", "Alta"];
 
-export default function Desejos({ carId, carName, hoje }) {
+export default function Desejos({ carId, carName, hoje, titulo = "Desejos" }) {
+  const db = useDb();
   const [lista, setLista] = useState([]);
 
   const [peca, setPeca] = useState("");
@@ -80,7 +81,7 @@ export default function Desejos({ carId, carName, hoje }) {
 
   return (
     <div>
-      <h3>Desejos — {carName}</h3>
+      <h3>{titulo} — {carName}</h3>
 
       <form onSubmit={adicionar} style={{ display: "grid", gap: 8, maxWidth: 520 }}>
         <label>

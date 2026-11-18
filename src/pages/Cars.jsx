@@ -1,10 +1,12 @@
+import BotaoVoltar from "./BotaoVoltar";
 import GaragemHome from "./GaragemHome";
 // src/pages/Cars.jsx
 
 import { useEffect, useRef, useState } from "react";
-import { db } from "../db/db";
+import { useDb } from "../db/db";
 
 import CarroDetalhe from "./CarroDetalhe";
+import LampadasVeiculo, { limparLampadas } from "./LampadasVeiculo";
 import AbastecimentosCarro from "./AbastecimentosCarro";
 import AlertasHome from "./AlertasHome";
 
@@ -158,7 +160,7 @@ function dinheiroParaNumero(
    BADGE DE REVISÕES
 ================================================== */
 
-async function calcularBadgeDoCarro(
+async function calcularBadgeDoCarro(db,
   carId,
   kmAtual
 ) {
@@ -263,6 +265,7 @@ async function calcularBadgeDoCarro(
 export default function Cars({
   onAbrirProximas,
 }) {
+  const db = useDb();
   const [
     carros,
     setCarros,
@@ -351,10 +354,8 @@ export default function Cars({
     setPneu,
   ] = useState("");
 
-  const [
-    lampadas,
-    setLampadas,
-  ] = useState("");
+  const [lampadas, setLampadas] = useState({});
+  const [adquiridoEm, setAdquiridoEm] = useState("");
 
   const [
     valorPago,
@@ -454,6 +455,9 @@ export default function Cars({
     setEditPneu,
   ] = useState("");
 
+  const [editLampadasPorTipo, setEditLampadasPorTipo] = useState({});
+  const [editAdquiridoEm, setEditAdquiridoEm] = useState("");
+
   const [
     editLampadas,
     setEditLampadas,
@@ -542,7 +546,7 @@ export default function Cars({
           : null;
 
       const badge =
-        await calcularBadgeDoCarro(
+        await calcularBadgeDoCarro(db,
           carro.id,
           kmAtual
         );
@@ -716,7 +720,8 @@ export default function Cars({
     setCombustivel("");
     setOleo("");
     setPneu("");
-    setLampadas("");
+    setLampadas({});
+    setAdquiridoEm("");
     setValorPago("");
 
     setFipeMarcaId("");
@@ -872,8 +877,8 @@ export default function Cars({
       tire:
         pneu.trim(),
 
-      bulbs:
-        lampadas.trim(),
+      bulbsByPosition: limparLampadas(lampadas),
+      acquiredOn: adquiridoEm || null,
 
       purchasePrice:
         valorPagoNumero,
@@ -1007,84 +1012,7 @@ export default function Cars({
   async function excluirCarro(
     id
   ) {
-    await db.cars.delete(
-      id
-    );
-
-    if (db.services) {
-      const revisoes =
-        await db.services
-          .where("carId")
-          .equals(id)
-          .toArray();
-
-      if (
-        revisoes.length
-      ) {
-        await db.services.bulkDelete(
-          revisoes.map(
-            (r) => r.id
-          )
-        );
-      }
-    }
-
-    if (db.purchases) {
-      const compras =
-        await db.purchases
-          .where("carId")
-          .equals(id)
-          .toArray();
-
-      if (
-        compras.length
-      ) {
-        await db.purchases.bulkDelete(
-          compras.map(
-            (x) => x.id
-          )
-        );
-      }
-    }
-
-    if (db.wishlist) {
-      const desejos =
-        await db.wishlist
-          .where("carId")
-          .equals(id)
-          .toArray();
-
-      if (
-        desejos.length
-      ) {
-        await db.wishlist.bulkDelete(
-          desejos.map(
-            (x) => x.id
-          )
-        );
-      }
-    }
-
-    if (
-      db.abastecimentos
-    ) {
-      const abastecimentos =
-        await db.abastecimentos
-          .where("carId")
-          .equals(id)
-          .toArray();
-
-      if (
-        abastecimentos.length
-      ) {
-        await db.abastecimentos.bulkDelete(
-          abastecimentos.map(
-            (a) => a.id
-          )
-        );
-      }
-    }
-
+    await db.cars.delete(id);
     await carregarCarros();
   }
 
@@ -1243,9 +1171,9 @@ export default function Cars({
       carro.tire || ""
     );
 
-    setEditLampadas(
-      carro.bulbs || ""
-    );
+    setEditLampadas(carro.bulbs || "");
+    setEditLampadasPorTipo(carro.bulbsByPosition ?? {});
+    setEditAdquiridoEm(String(carro.acquiredOn ?? "").slice(0, 4));
 
     setEditValorPago(
       carro.purchasePrice !=
@@ -1349,6 +1277,8 @@ export default function Cars({
     setEditOleo("");
     setEditPneu("");
     setEditLampadas("");
+    setEditLampadasPorTipo({});
+    setEditAdquiridoEm("");
     setEditValorPago("");
 
     setEditFipeMarcaId("");
@@ -1370,6 +1300,11 @@ export default function Cars({
       editNome.trim();
 
     if (!nomeFinal) {
+      return;
+    }
+
+    if (editAdquiridoEm && !/^[1-9][0-9]{3}$/.test(editAdquiridoEm)) {
+      alert("Informe o ano de aquisição com quatro dígitos.");
       return;
     }
 
@@ -1491,8 +1426,9 @@ export default function Cars({
         tire:
           editPneu.trim(),
 
-        bulbs:
-          editLampadas.trim(),
+        bulbs: editLampadas.trim(),
+        bulbsByPosition: limparLampadas(editLampadasPorTipo),
+        acquiredOn: editAdquiridoEm || null,
 
         purchasePrice:
           valorPagoNumero,
@@ -1754,161 +1690,165 @@ export default function Cars({
   ================================================== */
 
   return (
-    <div className="carrev-home">
-      <button type="button" className="gr-back-home" onClick={() => { setModoLista(false); setMostrarCadastro(false); cancelarEdicao(); cancelarKm(); carregarCarros(); }}>← Início</button>
+    <div className="carrev-home gr-vehicle-list-page">
+      <BotaoVoltar onClick={() => { setModoLista(false); setMostrarCadastro(false); cancelarEdicao(); cancelarKm(); carregarCarros(); }} />
 
 
-      {/* LOGO */}
+      {!modoLista && (
+        <>
+          {/* LOGO */}
 
-      <header className="carrev-home-header">
+          <header className="carrev-home-header">
 
-        <div className="carrev-logo">
+            <div className="carrev-logo">
 
-          <span className="carrev-logo-car">
-            CAR
-          </span>
+              <span className="carrev-logo-car">
+                CAR
+              </span>
 
-          <span className="carrev-logo-rev">
-            REV
-          </span>
+              <span className="carrev-logo-rev">
+                REV
+              </span>
 
-        </div>
-
-        <div className="carrev-tagline">
-          Sua garagem sempre em dia
-        </div>
-
-      </header>
-
-      {/* ALERTAS */}
-
-      <div className="carrev-alertas-home">
-
-        <AlertasHome
-          onAbrirProximas={
-            onAbrirProximas
-          }
-          onAbrirCarro={(id) =>
-            setCarroSelecionadoId(
-              id
-            )
-          }
-          limiteItens={6}
-        />
-
-      </div>
-
-      {/* RESUMO */}
-
-      <section className="carrev-resumo">
-
-        <div className="carrev-resumo-header">
-
-          <div>
-
-            <div className="carrev-resumo-title">
-              Resumo da garagem
             </div>
 
-            <div className="carrev-resumo-subtitle">
-              Toque em um indicador para acessar
+            <div className="carrev-tagline">
+              Sua garagem sempre em dia
             </div>
+
+          </header>
+
+          {/* ALERTAS */}
+
+          <div className="carrev-alertas-home">
+
+            <AlertasHome
+              onAbrirProximas={
+                onAbrirProximas
+              }
+              onAbrirCarro={(id) =>
+                setCarroSelecionadoId(
+                  id
+                )
+              }
+              limiteItens={6}
+            />
 
           </div>
 
-        </div>
+          {/* RESUMO */}
 
-        <div
-          className="carrev-resumo-grid"
-          style={{
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          }}
-        >
+          <section className="carrev-resumo">
 
-          <button
-            type="button"
-            className="carrev-resumo-card"
-            onClick={
-              abrirVeiculosResumo
-            }
-          >
+            <div className="carrev-resumo-header">
 
-            <div className="carrev-resumo-icon azul">
-              🚗
+              <div>
+
+                <div className="carrev-resumo-title">
+                  Resumo da garagem
+                </div>
+
+                <div className="carrev-resumo-subtitle">
+                  Toque em um indicador para acessar
+                </div>
+
+              </div>
+
             </div>
 
-            <div className="carrev-resumo-numero">
-              {
-                resumoGaragem.veiculos
-              }
+            <div
+              className="carrev-resumo-grid"
+              style={{
+                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              }}
+            >
+
+              <button
+                type="button"
+                className="carrev-resumo-card"
+                onClick={
+                  abrirVeiculosResumo
+                }
+              >
+
+                <div className="carrev-resumo-icon azul">
+                  🚗
+                </div>
+
+                <div className="carrev-resumo-numero">
+                  {
+                    resumoGaragem.veiculos
+                  }
+                </div>
+
+                <div className="carrev-resumo-label">
+                  {resumoGaragem.veiculos ===
+                  1
+                    ? "Veículo"
+                    : "Veículos"}
+                </div>
+
+              </button>
+
+              <button
+                type="button"
+                className="carrev-resumo-card"
+                onClick={() =>
+                  abrirRevisoesStatus(
+                    "EM BREVE"
+                  )
+                }
+              >
+
+                <div className="carrev-resumo-icon amarelo">
+                  ◷
+                </div>
+
+                <div className="carrev-resumo-numero">
+                  {
+                    resumoGaragem.emBreve
+                  }
+                </div>
+
+                <div className="carrev-resumo-label">
+                  Em breve
+                </div>
+
+              </button>
+
+              <button
+                type="button"
+                className="carrev-resumo-card"
+                onClick={() =>
+                  abrirRevisoesStatus(
+                    "VENCIDA"
+                  )
+                }
+              >
+
+                <div className="carrev-resumo-icon vermelho">
+                  !
+                </div>
+
+                <div className="carrev-resumo-numero">
+                  {
+                    resumoGaragem.vencidas
+                  }
+                </div>
+
+                <div className="carrev-resumo-label">
+                  Vencidas
+                </div>
+
+              </button>
+
             </div>
 
-            <div className="carrev-resumo-label">
-              {resumoGaragem.veiculos ===
-              1
-                ? "Veículo"
-                : "Veículos"}
-            </div>
+          </section>
+        </>
+      )}
 
-          </button>
-
-          <button
-            type="button"
-            className="carrev-resumo-card"
-            onClick={() =>
-              abrirRevisoesStatus(
-                "EM BREVE"
-              )
-            }
-          >
-
-            <div className="carrev-resumo-icon amarelo">
-              ◷
-            </div>
-
-            <div className="carrev-resumo-numero">
-              {
-                resumoGaragem.emBreve
-              }
-            </div>
-
-            <div className="carrev-resumo-label">
-              Em breve
-            </div>
-
-          </button>
-
-          <button
-            type="button"
-            className="carrev-resumo-card"
-            onClick={() =>
-              abrirRevisoesStatus(
-                "VENCIDA"
-              )
-            }
-          >
-
-            <div className="carrev-resumo-icon vermelho">
-              !
-            </div>
-
-            <div className="carrev-resumo-numero">
-              {
-                resumoGaragem.vencidas
-              }
-            </div>
-
-            <div className="carrev-resumo-label">
-              Vencidas
-            </div>
-
-          </button>
-
-        </div>
-
-      </section>
-
-      {/* MINHA GARAGEM */}
+      {/* VEÍCULOS */}
 
       <section className="carrev-garagem-section">
 
@@ -1917,8 +1857,11 @@ export default function Cars({
           <div>
 
             <h1 className="carrev-garagem-title">
-              Minha garagem
+              Meus veículos
             </h1>
+            <p className="gr-vehicle-count">
+              {carros.length === 1 ? "1 veículo cadastrado" : `${carros.length} veículos cadastrados`}
+            </p>
 
           </div>
 
@@ -2111,7 +2054,7 @@ export default function Cars({
             </label>
 
             <label>
-              Óleo
+              Óleo de motor
 
               <input
                 value={oleo}
@@ -2139,20 +2082,19 @@ export default function Cars({
             </label>
 
             <label>
-              Lâmpadas
-
+              Adquirido em
               <input
-                value={
-                  lampadas
-                }
-                onChange={(e) =>
-                  setLampadas(
-                    e.target.value
-                  )
-                }
-                placeholder="Ex.: H4"
+                type="text"
+                inputMode="numeric"
+                pattern="[1-9][0-9]{3}"
+                maxLength={4}
+                placeholder="AAAA"
+                value={adquiridoEm}
+                onChange={e => setAdquiridoEm(e.target.value.replace(/\D/g, ""))}
               />
             </label>
+
+            <LampadasVeiculo valores={lampadas} onChange={setLampadas} />
 
           </div>
 
@@ -2364,6 +2306,10 @@ export default function Cars({
         }
       >
 
+        {carros.length === 0 && !mostrarCadastro && (
+          <p className="gr-info-panel">Adicione um veículo para começar sua garagem.</p>
+        )}
+
         {carros.map((c) => (
 
           <CarCard
@@ -2459,6 +2405,9 @@ export default function Cars({
               editPneu
             }
 
+            editAdquiridoEm={editAdquiridoEm}
+            editLampadasPorTipo={editLampadasPorTipo}
+
             editLampadas={
               editLampadas
             }
@@ -2531,6 +2480,9 @@ export default function Cars({
               setEditPneu
             }
 
+            setEditAdquiridoEm={setEditAdquiridoEm}
+            setEditLampadasPorTipo={setEditLampadasPorTipo}
+
             setEditLampadas={
               setEditLampadas
             }
@@ -2598,6 +2550,8 @@ function CarCard({
   editCombustivel,
   editOleo,
   editPneu,
+  editAdquiridoEm,
+  editLampadasPorTipo,
   editLampadas,
   editValorPago,
 
@@ -2619,6 +2573,8 @@ function CarCard({
   setEditCombustivel,
   setEditOleo,
   setEditPneu,
+  setEditAdquiridoEm,
+  setEditLampadasPorTipo,
   setEditLampadas,
   setEditValorPago,
 
@@ -2629,6 +2585,7 @@ function CarCard({
   onSalvarEdicao,
   onCancelarEdicao,
 }) {
+  const db = useDb();
   const [
     fotoUrl,
     setFotoUrl,
@@ -2765,7 +2722,7 @@ function CarCard({
           : null;
 
       const resultado =
-        await calcularBadgeDoCarro(
+        await calcularBadgeDoCarro(db,
           carro.id,
           kmAtual
         );
@@ -2852,35 +2809,35 @@ function CarCard({
           }
         >
 
-          {fotoUrl ? (
+          <div className="gr-list-car-media">
+            {fotoUrl ? (
 
-            <img
-              src={fotoUrl}
-              alt={`Foto do ${carro.name}`}
-              className="carrev-car-photo"
-            />
+              <img
+                src={fotoUrl}
+                alt={`Foto do ${carro.name}`}
+                className="carrev-car-photo"
+              />
 
-          ) : (
+            ) : (
 
-            <div className="carrev-car-placeholder">
+              <div className="carrev-car-placeholder">
 
-              <div className="carrev-placeholder-icon">
-                🚗
+                <div className="carrev-placeholder-icon">
+                  🚗
+                </div>
+
+                <div className="carrev-placeholder-title">
+                  Foto do veículo
+                </div>
+
+                <div className="carrev-placeholder-text">
+                  Adicione uma foto em Editar veículo
+                </div>
+
               </div>
 
-              <div className="carrev-placeholder-title">
-                Foto do veículo
-              </div>
-
-              <div className="carrev-placeholder-text">
-                Adicione uma foto em Editar veículo
-              </div>
-
-            </div>
-
-          )}
-
-          <div className="carrev-car-overlay" />
+            )}
+          </div>
 
           <div className="carrev-car-content">
 
@@ -3213,7 +3170,7 @@ function CarCard({
             </label>
 
             <label>
-              Óleo
+              Óleo de motor
 
               <input
                 value={
@@ -3243,19 +3200,24 @@ function CarCard({
             </label>
 
             <label>
-              Lâmpadas
-
+              Adquirido em
               <input
-                value={
-                  editLampadas
-                }
-                onChange={(e) =>
-                  setEditLampadas(
-                    e.target.value
-                  )
-                }
+                type="text"
+                inputMode="numeric"
+                pattern="[1-9][0-9]{3}"
+                maxLength={4}
+                placeholder="AAAA"
+                value={editAdquiridoEm}
+                onChange={e => setEditAdquiridoEm(e.target.value.replace(/\D/g, ""))}
               />
             </label>
+
+            <LampadasVeiculo
+              valores={editLampadasPorTipo}
+              onChange={setEditLampadasPorTipo}
+              observacao={editLampadas}
+              onObservacao={carro.bulbs ? setEditLampadas : undefined}
+            />
 
           </div>
 

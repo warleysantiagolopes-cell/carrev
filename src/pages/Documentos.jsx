@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { db } from "../db/db";
+import { useDb } from "../db/db";
 
 const CNH_ANDROID_PACKAGE = "br.gov.serpro.cnhe";
 
@@ -42,6 +42,7 @@ function hojeISO() {
 }
 
 export default function Documentos({ carId }) {
+  const db = useDb();
   const id = Number(carId);
 
   const [carro, setCarro] = useState(null);

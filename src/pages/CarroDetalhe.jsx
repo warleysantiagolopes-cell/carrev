@@ -1,850 +1,250 @@
-// src/pages/CarroDetalhe.jsx
-
-import { useEffect, useState } from "react";
-import { db } from "../db/db";
-
+import BotaoVoltar from "./BotaoVoltar";
+import { useEffect, useRef, useState } from "react";
+import { useDb } from "../db/db";
+import { Icone } from "./GaragemHome";
+import AbastecimentosCarro from "./AbastecimentosCarro";
 import Proximas from "./Proximas";
 import Revisoes from "./Revisoes";
 import Acabamentos from "./Acabamentos";
 import Desejos from "./Desejos";
 import Documentos from "./Documentos";
+import { tiposLampadas } from "./LampadasVeiculo";
+import "./CarroDetalhe.css";
 
-function textoOuTraco(v) {
-  const t = String(v ?? "").trim();
-  return t ? t : "—";
+const abas = [
+  { id: "geral", titulo: "Visão geral", icone: "carro" },
+  { id: "revisoes", titulo: "Registrar revisão", icone: "chave" },
+  { id: "proximas", titulo: "Próximas revisões", icone: "sino" },
+  { id: "documentos", titulo: "Documentos", icone: "documento" },
+  { id: "acabamentos", titulo: "Registrar item estético", icone: "brilho" },
+  { id: "desejos", titulo: "Lista de desejos", icone: "coracao" },
+];
+
+const desenhos = {
+  camera: "M3 7h4l2-3h6l2 3h4v13H3z M16 13a4 4 0 1 1-8 0 4 4 0 0 1 8 0",
+  velocimetro: "M4 19a9 9 0 1 1 16 0Z M12 16l4-5 M5 14h2m10 0h2M12 6v2",
+  calendario: "M4 5h16v16H4z M4 10h16M8 3v4m8-4v4m-8 7h2m4 0h2m-8 3h2",
+  placa: "M3 6h18v12H3z M7 10h10M7 14h10",
+  gota: "M12 3c2 4 6 8 6 12a6 6 0 1 1-12 0c0-4 4-8 6-12z",
+  pneu: "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z",
+  lampada: "M9 18v-3a6 6 0 1 1 6 0v3z M10 22h4",
+  brilho: "m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z",
+  coracao: "M12 21 4 13a5 5 0 0 1 8-6 5 5 0 0 1 8 6z",
+};
+
+function IconeFicha({ nome }) {
+  const desenho = desenhos[nome];
+  if (!desenho) return <Icone nome={nome} />;
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={desenho} />
+    </svg>
+  );
 }
 
-function formatarDinheiro(valor) {
-  if (
-    valor == null ||
-    !Number.isFinite(Number(valor))
-  ) {
-    return "—";
-  }
-
-  return Number(valor).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
+function numeroOuNulo(valor) {
+  return valor != null && Number.isFinite(Number(valor)) ? Number(valor) : null;
 }
 
-function formatarPercentual(valor) {
-  if (
-    valor == null ||
-    !Number.isFinite(Number(valor))
-  ) {
-    return "—";
-  }
+const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const percentual = new Intl.NumberFormat("pt-BR", {
+  style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: "exceptZero",
+});
 
-  return `${Number(valor).toLocaleString("pt-BR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}%`;
+function Dados({ campos }) {
+  return (
+    <dl className="ficha-dados">
+      {campos.map(([rotulo, valor, icone]) => (
+        <div key={rotulo}>
+          <dt>{icone && <IconeFicha nome={icone} />}{rotulo}</dt>
+          <dd>{String(valor ?? "").trim() || "—"}</dd>
+        </div>
+      ))}
+    </dl>
+  );
 }
 
-export default function CarroDetalhe({
-  carId,
-  onBack,
-}) {
-  const [carro, setCarro] = useState(null);
-  const [fotoUrl, setFotoUrl] = useState(null);
-  const [aba, setAba] = useState("proximas");
-
-  async function carregarCarro() {
-    const c = await db.cars.get(Number(carId));
-
-    setCarro(c || null);
-  }
-
-  useEffect(() => {
-    carregarCarro();
-  }, [carId]);
-
-  useEffect(() => {
-    if (fotoUrl) {
-      URL.revokeObjectURL(fotoUrl);
-    }
-
-    if (carro?.photo) {
-      setFotoUrl(
-        URL.createObjectURL(carro.photo)
-      );
-    } else {
-      setFotoUrl(null);
-    }
-
-    return () => {
-      if (fotoUrl) {
-        URL.revokeObjectURL(fotoUrl);
-      }
-    };
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [carro?.photo]);
-
-  async function alterarFoto(file) {
-    if (!file) return;
-
-    await db.cars.update(Number(carId), {
-      photo: file,
-    });
-
-    await carregarCarro();
-  }
-
-  async function removerFoto() {
-    await db.cars.update(Number(carId), {
-      photo: null,
-    });
-
-    await carregarCarro();
-  }
-
-  if (!carro) {
-    return (
-      <div style={{ padding: 16 }}>
-        <button onClick={onBack}>
-          Voltar
-        </button>
-
-        <p style={{ marginTop: 12 }}>
-          Carro não encontrado.
-        </p>
-      </div>
-    );
-  }
-
-  /* ==================================================
-     QUILOMETRAGEM
-  ================================================== */
-
-  const kmTxt =
-    typeof carro.currentMileage === "number"
-      ? `${carro.currentMileage.toLocaleString(
-          "pt-BR"
-        )} km`
-      : "—";
-
-  /* ==================================================
-     VALORES
-  ================================================== */
-
-  const valorPago =
-    carro.purchasePrice != null &&
-    Number.isFinite(
-      Number(carro.purchasePrice)
-    )
-      ? Number(carro.purchasePrice)
-      : null;
-
-  const valorFipe =
-    carro.fipeValue != null &&
-    Number.isFinite(
-      Number(carro.fipeValue)
-    )
-      ? Number(carro.fipeValue)
-      : null;
-
-  const temComparacao =
-    valorPago != null &&
-    valorPago > 0 &&
-    valorFipe != null;
-
-  const diferencaValor =
-    temComparacao
-      ? valorFipe - valorPago
-      : null;
-
-  const diferencaPercentual =
-    temComparacao
-      ? (
-          (valorFipe - valorPago) /
-          valorPago
-        ) * 100
-      : null;
-
-  const valorizou =
-    diferencaValor != null &&
-    diferencaValor > 0;
-
-  const desvalorizou =
-    diferencaValor != null &&
-    diferencaValor < 0;
-
-  let corDiferenca =
-    "#9ca3af";
-
-  if (valorizou) {
-    corDiferenca =
-      "#22c55e";
-  }
-
-  if (desvalorizou) {
-    corDiferenca =
-      "#ef4444";
-  }
+function ValorVeiculo({ carro }) {
+  const pago = numeroOuNulo(carro.purchasePrice);
+  const fipe = numeroOuNulo(carro.fipeValue);
+  const diferenca = pago > 0 && fipe !== null ? fipe - pago : null;
+  const modeloFipe = [ [carro.fipeBrand, carro.fipeModel].filter(Boolean).join(" "),
+    carro.fipeModelYear, carro.fipeFuel ].filter(Boolean).join(" · ");
 
   return (
-    <div style={{ padding: 16 }}>
+    <section className="ficha-painel">
+      <h2><Icone nome="moedas" />Valor do veículo</h2>
+      <Dados campos={[
+        ["FIPE atual", carro.fipeValueFormatted || (fipe !== null ? moeda.format(fipe) : null)],
+        ["Valor pago", pago !== null ? moeda.format(pago) : null],
+        ["Diferença", diferenca !== null ? (diferenca > 0 ? "+" : "") + moeda.format(diferenca) : null],
+        ["Variação", diferenca !== null ? percentual.format(diferenca / pago) : null],
+      ]} />
+      {carro.fipeCode || carro.fipeReference ? (
+        <div className="ficha-fipe-meta">
+          {carro.fipeModel && <p>{modeloFipe}</p>}
+          {carro.fipeCode && <p>Código FIPE {carro.fipeCode}</p>}
+          {carro.fipeReference && <p>Referência {carro.fipeReference}</p>}
+        </div>
+      ) : <p className="ficha-fipe-meta">Tabela FIPE ainda não configurada para este veículo.</p>}
+    </section>
+  );
+}
 
-      <button onClick={onBack}>
-        Voltar
-      </button>
+export default function CarroDetalhe({ carId, onBack }) {
+  const db = useDb();
+  const [carro, setCarro] = useState(null);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const [fotoUrl, setFotoUrl] = useState("");
+  const [salvandoFoto, setSalvandoFoto] = useState(false);
+  const [aba, setAba] = useState("geral");
+  const [abastecimentos, setAbastecimentos] = useState(false);
+  const seletorFoto = useRef(null);
+  const foto = carro?.photo;
 
-      <h2 style={{ marginTop: 12 }}>
-        {carro.name}
-      </h2>
+  useEffect(() => {
+    return db.cars.observar(Number(carId), {
+      next(registro) {
+        setCarro(registro ?? null);
+        setCarregando(false);
+      },
+      error() {
+        setErro("Não foi possível carregar o veículo.");
+        setCarregando(false);
+      },
+    });
+  }, [db, carId]);
 
-      {/* ==================================================
-          CARTÃO DE DADOS DO CARRO
-      ================================================== */}
+  useEffect(() => {
+    if (!(foto instanceof Blob)) {
+      setFotoUrl("");
+      return;
+    }
 
-      <div
-        style={{
-          marginTop: 12,
-          border: "1px solid #ddd",
-          borderRadius: 12,
-          padding: 12,
-          display: "flex",
-          gap: 16,
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
+    const url = URL.createObjectURL(foto);
+    setFotoUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [foto]);
 
-        {/* ==================================================
-            FOTO
-        ================================================== */}
+  async function salvarFoto(novaFoto) {
+    setSalvandoFoto(true);
+    setErro("");
+    try {
+      const atualizados = await db.cars.update(Number(carId), { photo: novaFoto });
+      if (!atualizados) throw new Error("Veículo não encontrado");
+    } catch {
+      setErro("Não foi possível salvar a foto. Tente novamente.");
+    } finally {
+      setSalvandoFoto(false);
+    }
+  }
 
-        <div>
+  if (abastecimentos) {
+    return <AbastecimentosCarro carId={carId} aoVoltar={() => setAbastecimentos(false)} />;
+  }
 
-          {fotoUrl ? (
-            <img
-              src={fotoUrl}
-              alt={`Foto do ${carro.name}`}
-              style={{
-                width: 110,
-                height: 110,
-                objectFit: "cover",
-                borderRadius: 12,
-                border: "1px solid #ccc",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: 110,
-                height: 110,
-                borderRadius: 12,
-                border: "1px dashed #aaa",
-                display: "grid",
-                placeItems: "center",
-                fontSize: 12,
-              }}
-            >
-              Sem foto
-            </div>
+  const km = typeof carro?.currentMileage === "number"
+    ? carro.currentMileage.toLocaleString("pt-BR") + " km"
+    : null;
+
+  return (
+    <main className="ficha-carro">
+      <header className="ficha-topo">
+        <BotaoVoltar onClick={onBack} />
+        <h1>{carro?.name || "Ficha do veículo"}</h1>
+        <span className="gr-mini-brand" aria-hidden="true">CR</span>
+      </header>
+
+      {carregando && <p role="status">Carregando veículo…</p>}
+      {erro && <p role="alert" className="ficha-erro">{erro}</p>}
+      {!carregando && !carro && !erro && <p>Carro não encontrado.</p>}
+
+      {carro && (
+        <>
+          <nav className="ficha-abas" aria-label="Seções do veículo">
+            {abas.map(({ id, titulo, icone }) => (
+              <button key={id} type="button" aria-pressed={aba === id} onClick={() => setAba(id)}>
+                <IconeFicha nome={icone} />{titulo}
+              </button>
+            ))}
+          </nav>
+
+          {aba === "geral" && (
+            <>
+              <section className="ficha-apresentacao" aria-label="Foto e identificação do veículo">
+                <div className="ficha-foto">
+                  {fotoUrl ? (
+                    <img src={fotoUrl} alt={`Foto do ${carro.name}`} />
+                  ) : (
+                    <div className="ficha-sem-foto"><Icone nome="carro" /><span>Sem foto</span></div>
+                  )}
+                </div>
+                <div className="ficha-identificacao">
+                  <div>
+                    <h2>{carro.name}</h2>
+                    <p>{[carro.model, carro.year].filter(Boolean).join(" · ")}</p>
+                  </div>
+                  <div className="ficha-acoes-foto">
+                    <input ref={seletorFoto} type="file" accept="image/*" hidden onChange={evento => {
+                      const arquivo = evento.currentTarget.files?.[0];
+                      evento.currentTarget.value = "";
+                      if (arquivo) salvarFoto(arquivo);
+                    }} />
+                    <button type="button" disabled={salvandoFoto} onClick={() => seletorFoto.current?.click()}>
+                      <IconeFicha nome="camera" />{foto ? "Alterar foto" : "Adicionar foto"}
+                    </button>
+                    {foto && <button type="button" disabled={salvandoFoto} onClick={() => salvarFoto(null)}>
+                      Remover foto
+                    </button>}
+                  </div>
+                </div>
+              </section>
+
+              <section className="ficha-painel">
+                <h2><Icone nome="carro" />Dados do carro</h2>
+                <Dados campos={[
+                  ["Quilometragem", km, "velocimetro"],
+                  ["Combustível", carro.fuel, "bomba"],
+                  ["Modelo", carro.model, "carro"],
+                  ["Ano", carro.year, "calendario"],
+                  ["Placa", carro.plate, "placa"],
+                  ["RENAVAM", carro.renavam, "documento"],
+                  ["Chassi", carro.chassis, "documento"],
+                  ["Adquirido em", String(carro.acquiredOn ?? "").slice(0, 4), "calendario"],
+                ]} />
+              </section>
+
+              <div className="ficha-acoes">
+                <button type="button" onClick={() => setAba("revisoes")}><Icone nome="chave" />Registrar revisão</button>
+                <button type="button" onClick={() => setAbastecimentos(true)}><Icone nome="bomba" />Abrir abastecimentos</button>
+              </div>
+
+              <section className="ficha-painel">
+                <h2><Icone nome="chave" />Itens de referência</h2>
+                <Dados campos={[
+                  ["Óleo de motor", carro.oil, "gota"],
+                  ["Pneu", carro.tire, "pneu"],
+                ]} />
+                <details className="ficha-lampadas">
+                  <summary><IconeFicha nome="lampada" />Lâmpadas</summary>
+                  <Dados campos={tiposLampadas.map(([id, rotulo]) => [rotulo, carro.bulbsByPosition?.[id]])} />
+                  {carro.bulbs && <Dados campos={[["Anotação anterior", carro.bulbs]]} />}
+                </details>
+              </section>
+
+              <ValorVeiculo carro={carro} />
+            </>
           )}
 
-          <div
-            style={{
-              marginTop: 8,
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-
-            <label
-              style={{
-                display: "inline-block",
-              }}
-            >
-
-              <span
-                style={{
-                  display: "inline-block",
-                  padding: "6px 10px",
-                  border: "1px solid #ddd",
-                  borderRadius: 6,
-                  cursor: "pointer",
-                  userSelect: "none",
-                }}
-              >
-                Alterar foto
-              </span>
-
-              <input
-                type="file"
-                accept="image/*"
-                style={{
-                  display: "none",
-                }}
-                onChange={(e) => {
-                  const f =
-                    e.target.files?.[0];
-
-                  if (f) {
-                    alterarFoto(f);
-                  }
-
-                  e.target.value = "";
-                }}
-              />
-
-            </label>
-
-            {carro.photo ? (
-              <button
-                onClick={
-                  removerFoto
-                }
-              >
-                Remover foto
-              </button>
-            ) : null}
-
-          </div>
-
-        </div>
-
-        {/* ==================================================
-            DADOS PRINCIPAIS
-        ================================================== */}
-
-        <div
-          style={{
-            minWidth: 240,
-          }}
-        >
-
-          <strong>
-            Dados do carro
-          </strong>
-
-          <div
-            style={{
-              fontSize: 13,
-              marginTop: 6,
-              display: "grid",
-              gap: 4,
-            }}
-          >
-
-            <div>
-              <b>Modelo:</b>{" "}
-              {textoOuTraco(
-                carro.model
-              )}
-            </div>
-
-            <div>
-              <b>Ano:</b>{" "}
-              {textoOuTraco(
-                carro.year
-              )}
-            </div>
-
-            <div>
-              <b>Placa:</b>{" "}
-              {textoOuTraco(
-                carro.plate
-              )}
-            </div>
-
-            <div>
-              <b>Chassi:</b>{" "}
-              {textoOuTraco(
-                carro.chassis
-              )}
-            </div>
-
-            <div>
-              <b>RENAVAM:</b>{" "}
-              {textoOuTraco(
-                carro.renavam
-              )}
-            </div>
-
-            <div>
-              <b>Combustível:</b>{" "}
-              {textoOuTraco(
-                carro.fuel
-              )}
-            </div>
-
-            <div>
-              <b>Quilometragem:</b>{" "}
-              {kmTxt}
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* ==================================================
-            ITENS DE REFERÊNCIA
-        ================================================== */}
-
-        <div
-          style={{
-            minWidth: 240,
-          }}
-        >
-
-          <strong>
-            Itens de referência
-          </strong>
-
-          <div
-            style={{
-              fontSize: 13,
-              marginTop: 6,
-              display: "grid",
-              gap: 4,
-            }}
-          >
-
-            <div>
-              <b>Óleo:</b>{" "}
-              {textoOuTraco(
-                carro.oil
-              )}
-            </div>
-
-            <div>
-              <b>Pneu:</b>{" "}
-              {textoOuTraco(
-                carro.tire
-              )}
-            </div>
-
-            <div>
-              <b>Lâmpadas:</b>{" "}
-              {textoOuTraco(
-                carro.bulbs
-              )}
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* ==================================================
-          VALOR DO VEÍCULO
-      ================================================== */}
-
-      <div
-        style={{
-          marginTop: 14,
-          padding: 16,
-          border:
-            "1px solid #29313d",
-          borderRadius: 14,
-          background:
-            "#0d1219",
-        }}
-      >
-
-        <div
-          style={{
-            fontSize: 16,
-            fontWeight: 800,
-            marginBottom: 14,
-          }}
-        >
-          Valor do veículo
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(150px, 1fr))",
-            gap: 10,
-          }}
-        >
-
-          {/* VALOR PAGO */}
-
-          <div
-            style={{
-              padding: 12,
-              border:
-                "1px solid #252e39",
-              borderRadius: 12,
-              background:
-                "#10161e",
-            }}
-          >
-
-            <div
-              style={{
-                color:
-                  "#8e98a7",
-                fontSize: 11,
-              }}
-            >
-              Valor pago
-            </div>
-
-            <div
-              style={{
-                marginTop: 5,
-                color: "#fff",
-                fontSize: 18,
-                fontWeight: 800,
-              }}
-            >
-              {formatarDinheiro(
-                valorPago
-              )}
-            </div>
-
-          </div>
-
-          {/* FIPE */}
-
-          <div
-            style={{
-              padding: 12,
-              border:
-                "1px solid #252e39",
-              borderRadius: 12,
-              background:
-                "#10161e",
-            }}
-          >
-
-            <div
-              style={{
-                color:
-                  "#8e98a7",
-                fontSize: 11,
-              }}
-            >
-              FIPE atual
-            </div>
-
-            <div
-              style={{
-                marginTop: 5,
-                color: "#fff",
-                fontSize: 18,
-                fontWeight: 800,
-              }}
-            >
-              {carro.fipeValueFormatted ||
-                formatarDinheiro(
-                  valorFipe
-                )}
-            </div>
-
-          </div>
-
-          {/* DIFERENÇA */}
-
-          <div
-            style={{
-              padding: 12,
-              border:
-                "1px solid #252e39",
-              borderRadius: 12,
-              background:
-                "#10161e",
-            }}
-          >
-
-            <div
-              style={{
-                color:
-                  "#8e98a7",
-                fontSize: 11,
-              }}
-            >
-              Diferença
-            </div>
-
-            <div
-              style={{
-                marginTop: 5,
-                color:
-                  corDiferenca,
-                fontSize: 18,
-                fontWeight: 800,
-              }}
-            >
-
-              {diferencaValor ==
-              null
-                ? "—"
-                : `${
-                    diferencaValor >
-                    0
-                      ? "+"
-                      : ""
-                  }${formatarDinheiro(
-                    diferencaValor
-                  )}`}
-
-            </div>
-
-          </div>
-
-          {/* PERCENTUAL */}
-
-          <div
-            style={{
-              padding: 12,
-              border:
-                "1px solid #252e39",
-              borderRadius: 12,
-              background:
-                "#10161e",
-            }}
-          >
-
-            <div
-              style={{
-                color:
-                  "#8e98a7",
-                fontSize: 11,
-              }}
-            >
-              Variação
-            </div>
-
-            <div
-              style={{
-                marginTop: 5,
-                color:
-                  corDiferenca,
-                fontSize: 18,
-                fontWeight: 800,
-              }}
-            >
-
-              {diferencaPercentual ==
-              null
-                ? "—"
-                : `${
-                    diferencaPercentual >
-                    0
-                      ? "+"
-                      : ""
-                  }${formatarPercentual(
-                    diferencaPercentual
-                  )}`}
-
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* ==================================================
-            DADOS FIPE
-        ================================================== */}
-
-        {carro.fipeCode ||
-        carro.fipeReference ? (
-
-          <div
-            style={{
-              marginTop: 12,
-              paddingTop: 12,
-              borderTop:
-                "1px solid #252e39",
-              color:
-                "#8e98a7",
-              fontSize: 11,
-              lineHeight: 1.6,
-            }}
-          >
-
-            {carro.fipeModel ? (
-
-              <div>
-                <b>
-                  Veículo FIPE:
-                </b>{" "}
-                {carro.fipeBrand
-                  ? `${carro.fipeBrand} `
-                  : ""}
-                {carro.fipeModel}
-                {carro.fipeModelYear
-                  ? ` • ${carro.fipeModelYear}`
-                  : ""}
-                {carro.fipeFuel
-                  ? ` • ${carro.fipeFuel}`
-                  : ""}
-              </div>
-
-            ) : null}
-
-            {carro.fipeCode ? (
-
-              <div>
-                <b>
-                  Código FIPE:
-                </b>{" "}
-                {carro.fipeCode}
-              </div>
-
-            ) : null}
-
-            {carro.fipeReference ? (
-
-              <div>
-                <b>
-                  Referência:
-                </b>{" "}
-                {carro.fipeReference}
-              </div>
-
-            ) : null}
-
-          </div>
-
-        ) : (
-
-          <div
-            style={{
-              marginTop: 12,
-              color:
-                "#7f8999",
-              fontSize: 11,
-            }}
-          >
-            Tabela FIPE ainda não configurada para este veículo.
-          </div>
-
-        )}
-
-      </div>
-
-      {/* ==================================================
-          ABAS
-      ================================================== */}
-
-      <div
-        style={{
-          marginTop: 16,
-          display: "flex",
-          gap: 8,
-          flexWrap: "wrap",
-        }}
-      >
-
-        <button
-          onClick={() =>
-            setAba("proximas")
-          }
-          disabled={
-            aba === "proximas"
-          }
-        >
-          Próximas revisões
-        </button>
-
-        <button
-          onClick={() =>
-            setAba("revisoes")
-          }
-          disabled={
-            aba === "revisoes"
-          }
-        >
-          Revisões
-        </button>
-
-        <button
-          onClick={() =>
-            setAba(
-              "acabamentos"
-            )
-          }
-          disabled={
-            aba === "acabamentos"
-          }
-        >
-          Acabamentos
-        </button>
-
-        <button
-          onClick={() =>
-            setAba("desejos")
-          }
-          disabled={
-            aba === "desejos"
-          }
-        >
-          Desejos
-        </button>
-
-        <button
-          onClick={() =>
-            setAba("documentos")
-          }
-          disabled={
-            aba === "documentos"
-          }
-        >
-          Documentos
-        </button>
-
-      </div>
-
-      {/* ==================================================
-          CONTEÚDO DAS ABAS
-      ================================================== */}
-
-      <div
-        style={{
-          marginTop: 16,
-        }}
-      >
-
-        {aba === "proximas" && (
-          <Proximas
-            carId={carId}
-          />
-        )}
-
-        {aba === "revisoes" && (
-          <Revisoes
-            carId={carId}
-          />
-        )}
-
-        {aba === "acabamentos" && (
-          <Acabamentos
-            carId={carId}
-            carName={
-              carro.name
-            }
-          />
-        )}
-
-        {aba === "desejos" && (
-          <Desejos
-            carId={carId}
-            carName={
-              carro.name
-            }
-          />
-        )}
-
-        {aba === "documentos" && (
-          <Documentos
-            carId={carId}
-          />
-        )}
-
-      </div>
-
-    </div>
+          {aba === "proximas" && <Proximas carId={carId} />}
+          {aba === "revisoes" && <Revisoes titulo="Registrar revisão" carId={carId} />}
+          {aba === "acabamentos" && <Acabamentos titulo="Registrar item estético" carId={carId} carName={carro.name} />}
+          {aba === "desejos" && <Desejos titulo="Lista de desejos" carId={carId} carName={carro.name} />}
+          {aba === "documentos" && <Documentos carId={carId} />}
+        </>
+      )}
+    </main>
   );
 }

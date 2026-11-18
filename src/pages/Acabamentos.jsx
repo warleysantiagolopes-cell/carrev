@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { db } from "../db/db";
+import { useDb } from "../db/db";
 
 /* =======================
    Helpers
@@ -20,14 +20,14 @@ function moedaBR(v) {
   }
 }
 
-async function listarAnexos(entityType, entityId) {
+async function listarAnexos(db, entityType, entityId) {
   return await db.attachments
     .where("[entityType+entityId]")
     .equals([entityType, Number(entityId)])
     .toArray();
 }
 
-async function adicionarAnexos(entityType, entityId, files) {
+async function adicionarAnexos(db, entityType, entityId, files) {
   const arr = Array.from(files || []);
   if (arr.length === 0) return;
 
@@ -45,7 +45,8 @@ async function adicionarAnexos(entityType, entityId, files) {
 /* =======================
    Página
 ======================= */
-export default function Acabamentos({ carId, carName }) {
+export default function Acabamentos({ carId, carName, titulo = "Acabamentos" }) {
+  const db = useDb();
   const [lista, setLista] = useState([]);
 
   const [peca, setPeca] = useState("");
@@ -86,7 +87,7 @@ export default function Acabamentos({ carId, carName }) {
     });
 
     if (notaFiles.length) {
-      await adicionarAnexos("purchase", purchaseId, notaFiles);
+      await adicionarAnexos(db, "purchase", purchaseId, notaFiles);
     }
 
     setPeca("");
@@ -98,7 +99,7 @@ export default function Acabamentos({ carId, carName }) {
   }
 
   async function excluir(id) {
-    const anexos = await listarAnexos("purchase", id);
+    const anexos = await listarAnexos(db, "purchase", id);
     if (anexos.length) {
       await db.attachments.bulkDelete(anexos.map((a) => a.id));
     }
@@ -115,7 +116,7 @@ export default function Acabamentos({ carId, carName }) {
 
   return (
     <div>
-      <h3>Acabamentos — {carName}</h3>
+      <h3>{titulo} — {carName}</h3>
 
       <form onSubmit={adicionar} style={{ display: "grid", gap: 8, maxWidth: 560 }}>
         <label>
@@ -180,10 +181,11 @@ export default function Acabamentos({ carId, carName }) {
    Item
 ======================= */
 function Item({ item, onExcluir }) {
+  const db = useDb();
   const [anexos, setAnexos] = useState([]);
 
   async function carregar() {
-    const list = await listarAnexos("purchase", item.id);
+    const list = await listarAnexos(db, "purchase", item.id);
     setAnexos(list);
   }
 
@@ -193,7 +195,7 @@ function Item({ item, onExcluir }) {
 
   async function adicionarMais(files) {
     if (!files?.length) return;
-    await adicionarAnexos("purchase", item.id, files);
+    await adicionarAnexos(db, "purchase", item.id, files);
     await carregar();
   }
 

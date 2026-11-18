@@ -1,7 +1,7 @@
 // src/pages/AlertasHome.jsx
 
 import { useEffect, useMemo, useState } from "react";
-import { db } from "../db/db";
+import { useDb } from "../db/db";
 
 /* ==================================================
    HELPERS DE STATUS
@@ -89,6 +89,7 @@ function piorStatus(a, b) {
 export default function AlertasHome({
   onAbrirProximas,
 }) {
+  const db = useDb();
   const [itens, setItens] =
     useState([]);
 

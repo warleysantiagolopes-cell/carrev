@@ -1,0 +1,40 @@
+.carrev-voltar[type="button"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 6px 11px;
+  border: 1px solid #59603b;
+  border-radius: 10px;
+  background: #092713;
+  color: #ffd000;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.carrev-voltar[type="button"]:hover {
+  border-color: #ffd000;
+}
+
+.carrev-voltar[type="button"]:focus-visible {
+  outline: 2px solid #ffd000;
+  outline-offset: 2px;
+}
+
+.carrev-voltar[type="button"] svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.gr-vehicle-list-page > .carrev-voltar {
+  margin-bottom: 16px;
+}
+
+@media print {
+  .gr-page-top .carrev-voltar[type="button"] {
+    display: none;
+  }
+}

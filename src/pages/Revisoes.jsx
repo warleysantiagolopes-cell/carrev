@@ -1,5 +1,6 @@
+import BotaoVoltar from "./BotaoVoltar";
 import { useEffect, useMemo, useState } from "react";
-import { db } from "../db/db";
+import { useDb } from "../db/db";
 
 const TIPOS_REVISAO = [
   "Troca de óleo",
@@ -45,14 +46,14 @@ function addMesesYYYYMMDD(dataYYYYMMDD, meses) {
 }
 
 // ===== Anexos (compatível com db.js atual) =====
-async function listarAnexos(ownerType, ownerId) {
+async function listarAnexos(db, ownerType, ownerId) {
   return await db.attachments
     .where("[ownerType+ownerId]")
     .equals([ownerType, Number(ownerId)])
     .toArray();
 }
 
-async function adicionarAnexos(ownerType, ownerId, files, category = "foto") {
+async function adicionarAnexos(db, ownerType, ownerId, files, category = "foto") {
   const arr = Array.from(files || []);
   if (arr.length === 0) return;
 
@@ -68,7 +69,8 @@ async function adicionarAnexos(ownerType, ownerId, files, category = "foto") {
   );
 }
 
-export default function Revisoes({ carId, onBack }) {
+export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
+  const db = useDb();
   const [carro, setCarro] = useState(null);
   const [revisoes, setRevisoes] = useState([]);
 
@@ -155,7 +157,7 @@ export default function Revisoes({ carId, onBack }) {
     });
 
     if (fotosNovas?.length) {
-      await adicionarAnexos("service", serviceId, fotosNovas, "foto");
+      await adicionarAnexos(db, "service", serviceId, fotosNovas, "foto");
     }
 
     setKm("");
@@ -168,7 +170,7 @@ export default function Revisoes({ carId, onBack }) {
   }
 
   async function excluirRevisao(id) {
-    const anexos = await listarAnexos("service", id);
+    const anexos = await listarAnexos(db, "service", id);
     if (anexos.length) {
       await db.attachments.bulkDelete(anexos.map((a) => a.id));
     }
@@ -220,7 +222,7 @@ export default function Revisoes({ carId, onBack }) {
   if (!carro) {
     return (
       <div style={{ padding: 16 }}>
-        <button onClick={onBack}>Voltar</button>
+        <BotaoVoltar onClick={onBack} />
         <p style={{ marginTop: 12 }}>Carro não encontrado.</p>
       </div>
     );
@@ -228,8 +230,8 @@ export default function Revisoes({ carId, onBack }) {
 
   return (
     <div style={{ padding: 16 }}>
-      <button onClick={onBack}>Voltar</button>
-      <h2 style={{ marginTop: 12 }}>Revisões — {carro.name}</h2>
+      <BotaoVoltar onClick={onBack} />
+      <h2 style={{ marginTop: 12 }}>{titulo} — {carro.name}</h2>
 
       <form
         onSubmit={adicionarRevisao}
@@ -447,6 +449,7 @@ export default function Revisoes({ carId, onBack }) {
 }
 
 function FotosDaEntidade({ ownerType, ownerId }) {
+  const db = useDb();
   const [anexos, setAnexos] = useState([]);
 
   async function carregar() {
@@ -465,7 +468,7 @@ function FotosDaEntidade({ ownerType, ownerId }) {
 
   async function adicionarMais(files) {
     if (!files || files.length === 0) return;
-    await adicionarAnexos(ownerType, ownerId, files, "foto");
+    await adicionarAnexos(db, ownerType, ownerId, files, "foto");
     await carregar();
   }
 

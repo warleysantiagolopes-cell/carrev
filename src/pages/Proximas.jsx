@@ -1,7 +1,8 @@
+import BotaoVoltar from "./BotaoVoltar";
 // src/pages/Proximas.jsx
 
 import { useEffect, useMemo, useState } from "react";
-import { db } from "../db/db";
+import { useDb } from "../db/db";
 
 function diasAte(dataYYYYMMDD) {
   const [y, m, d] = String(dataYYYYMMDD).split("-").map(Number);
@@ -92,6 +93,7 @@ export default function Proximas({
   filtroStatusInicial = "TODAS",
   onBack = null,
 }) {
+  const db = useDb();
   const [carros, setCarros] = useState([]);
   const [todosItens, setTodosItens] = useState([]);
 
@@ -382,15 +384,7 @@ export default function Proximas({
         <div>
 
           {onBack ? (
-            <button
-              type="button"
-              onClick={onBack}
-              style={{
-                marginBottom: 14,
-              }}
-            >
-              ← Voltar
-            </button>
+            <div style={{ marginBottom: 14 }}><BotaoVoltar onClick={onBack} /></div>
           ) : null}
 
           <h2

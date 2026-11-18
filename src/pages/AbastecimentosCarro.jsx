@@ -1,7 +1,8 @@
+import BotaoVoltar from "./BotaoVoltar";
 // src/pages/AbastecimentosCarro.jsx
 
 import { useEffect, useMemo, useState } from "react";
-import { db } from "../db/db";
+import { useDb } from "../db/db";
 import { atualizarFipeDoCarro } from "../services/fipe";
 
 function hojeISO() {
@@ -37,6 +38,7 @@ export default function AbastecimentosCarro({
   carId,
   aoVoltar,
 }) {
+  const db = useDb();
   const [carro, setCarro] = useState(null);
   const [historico, setHistorico] = useState([]);
 
@@ -338,13 +340,7 @@ export default function AbastecimentosCarro({
     return (
       <div className="carrev-abastecimento-page">
 
-        <button
-          type="button"
-          className="carrev-back-button"
-          onClick={aoVoltar}
-        >
-          ← Voltar
-        </button>
+        <BotaoVoltar onClick={aoVoltar} />
 
         <div className="carrev-empty-card">
           Carro não encontrado.
@@ -365,13 +361,7 @@ export default function AbastecimentosCarro({
 
       <div className="carrev-abastecimento-top">
 
-        <button
-          type="button"
-          className="carrev-back-button"
-          onClick={aoVoltar}
-        >
-          ← Voltar
-        </button>
+        <BotaoVoltar onClick={aoVoltar} />
 
         <div className="carrev-abastecimento-header">
 

@@ -2644,3 +2644,106 @@ body, #root { background:#020f08; }
   .gr-info-panel h2, .gr-info-panel p, .gr-info-panel small, .gr-report-row b { color:black !important; }
   .gr-info-panel { border:0; }
 }
+
+/* Meus veículos */
+.gr-vehicle-list-page {
+  max-width: 760px;
+  background: #04190d;
+}
+
+.gr-vehicle-list-page .carrev-garagem-header {
+  border-bottom: 2px solid #d0ae1d;
+  padding-bottom: 12px;
+}
+
+.gr-vehicle-count {
+  margin: 5px 0 0;
+  color: #bac7b2;
+  font-size: 14px;
+}
+
+.gr-vehicle-list-page .carrev-car-card {
+  display: grid;
+  grid-template-columns: minmax(105px, 34%) minmax(0, 1fr);
+  min-height: 0;
+  background: #092412;
+  border: 1px solid #41583c;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.gr-list-car-media {
+  position: relative;
+  min-height: 100%;
+  overflow: hidden;
+  background: #0e301a;
+}
+
+.gr-list-car-media .carrev-car-placeholder {
+  padding: 8px;
+}
+
+.gr-list-car-media .carrev-placeholder-title {
+  color: #bac7b2;
+}
+
+.gr-list-car-media .carrev-placeholder-text {
+  display: none;
+}
+
+.gr-vehicle-list-page .carrev-car-content {
+  min-height: 0;
+  justify-content: center;
+  padding: 14px;
+  overflow-wrap: anywhere;
+}
+
+.gr-vehicle-list-page .carrev-car-name {
+  font-size: clamp(19px, 3vw, 25px);
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.gr-vehicle-list-page .carrev-car-km,
+.gr-vehicle-list-page .carrev-car-status {
+  margin-top: 7px;
+  font-size: 13px;
+}
+
+.gr-vehicle-list-page .carrev-car-bottom {
+  margin-top: 12px;
+}
+
+.gr-vehicle-list-page .carrev-car-bottom button {
+  width: 100%;
+  background: #ffd000;
+  color: #142108;
+}
+
+.gr-vehicle-list-page .carrev-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.gr-vehicle-list-page .carrev-secondary-actions button {
+  min-height: 44px;
+  padding: 5px;
+  border-color: #496248;
+  background: #102d1b;
+  color: #edf2e8;
+}
+
+.gr-vehicle-list-page .carrev-secondary-actions button:hover {
+  border-color: #ffd000;
+}
+
+@media (max-width: 360px) {
+  .gr-vehicle-list-page .carrev-car-card {
+    grid-template-columns: minmax(86px, 30%) minmax(0, 1fr);
+  }
+
+  .gr-vehicle-list-page .carrev-car-content {
+    padding: 10px;
+  }
+}

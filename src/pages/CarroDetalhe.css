@@ -1,0 +1,278 @@
+.ficha-carro {
+  width: 100%;
+  max-width: 760px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 0 16px 32px;
+  background: #04190d;
+  color: #f5f4eb;
+}
+
+.ficha-topo svg,
+.ficha-abas svg,
+.ficha-sem-foto svg,
+.ficha-acoes-foto svg,
+.ficha-acoes svg,
+.ficha-painel svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.ficha-topo {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) 82px;
+  align-items: center;
+  min-height: 62px;
+  border-bottom: 3px solid #ffd000;
+  box-shadow: 0 3px 0 #a7262f;
+  text-align: center;
+}
+
+.ficha-topo h1 {
+  margin: 0;
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.ficha-abas {
+  display: flex;
+  gap: 4px;
+  margin: 9px 0 14px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #59744f transparent;
+}
+
+.ficha-abas button {
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 46px;
+  padding: 6px 10px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  color: #d5dfce;
+  background: transparent;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.ficha-abas button[aria-pressed="true"] {
+  border-color: #ffd000;
+  color: #ffd000;
+}
+
+.ficha-abas svg,
+.ficha-acoes-foto svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ficha-apresentacao,
+.ficha-painel {
+  margin-bottom: 12px;
+  border: 1px solid #3c563d;
+  border-radius: 14px;
+  background: #082312;
+}
+
+.ficha-apresentacao {
+  overflow: hidden;
+}
+
+.ficha-foto {
+  display: grid;
+  place-items: center;
+  height: clamp(155px, 45vw, 325px);
+  background: radial-gradient(ellipse at center, #1a3c26, #061c0e 78%);
+}
+
+.ficha-foto img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+}
+
+.ficha-sem-foto {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  color: #c7d6bd;
+  font-size: 13px;
+}
+
+.ficha-sem-foto svg {
+  width: 50px;
+  height: 50px;
+  color: #ffd000;
+}
+
+.ficha-identificacao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px;
+  overflow-wrap: anywhere;
+}
+
+.ficha-identificacao h2,
+.ficha-painel h2 {
+  margin: 0;
+  color: #f5f4eb;
+}
+
+.ficha-identificacao h2 {
+  font-size: 21px;
+}
+
+.ficha-identificacao p {
+  margin: 3px 0 0;
+  color: #cad6c3;
+  font-size: 14px;
+}
+
+.ficha-acoes-foto,
+.ficha-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ficha-acoes-foto button,
+.ficha-acoes button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 7px 12px;
+  border: 1px solid #688259;
+  border-radius: 10px;
+  background: transparent;
+  color: #f5f4eb;
+  font-size: 13px;
+}
+
+.ficha-acoes {
+  margin-bottom: 12px;
+}
+
+.ficha-acoes button {
+  flex: 1 1 190px;
+  border-color: #ffd000;
+  color: #ffd000;
+  font-weight: 700;
+}
+
+.ficha-acoes button:first-child {
+  border-color: #c03a41;
+  background: #92262d;
+  color: #fff;
+}
+
+.ficha-painel {
+  padding: 12px;
+}
+
+.ficha-painel h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.ficha-painel h2 svg {
+  color: #ffd000;
+}
+
+.ficha-dados {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 11px 0 0;
+}
+
+.ficha-dados > div {
+  padding: 9px;
+  border: 1px solid #354d35;
+  border-radius: 9px;
+  background: #0d2918;
+}
+
+.ficha-dados dt {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #c3d0bc;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.ficha-dados dt svg {
+  width: 15px;
+  height: 15px;
+  color: #f0cc42;
+}
+
+.ficha-dados dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ficha-fipe-meta,
+.ficha-erro {
+  margin: 10px 0 0;
+  color: #c3d0bc;
+  font-size: 13px;
+}
+
+.ficha-fipe-meta p {
+  margin: 3px 0;
+}
+
+.ficha-erro {
+  color: #ffb7b7;
+}
+
+.ficha-carro button:focus-visible {
+  outline: 2px solid #ffd000;
+  outline-offset: 1px;
+}
+
+@media (min-width: 560px) {
+  .ficha-dados {
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  }
+}
+
+.ficha-lampadas {
+  margin-top: 8px;
+  padding: 9px;
+  border: 1px solid #354d35;
+  border-radius: 9px;
+  background: #0d2918;
+}
+
+.ficha-lampadas summary {
+  cursor: pointer;
+  color: #f5f4eb;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ficha-lampadas summary svg {
+  width: 15px;
+  height: 15px;
+  margin: 0 6px;
+  vertical-align: middle;
+  color: #f0cc42;
+}

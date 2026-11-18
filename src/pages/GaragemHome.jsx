@@ -1,5 +1,6 @@
+import BotaoVoltar from "./BotaoVoltar";
 import { useEffect, useRef, useState } from "react";
-import { db } from "../db/db";
+import { useDb } from "../db/db";
 import AbastecimentosCarro from "./AbastecimentosCarro";
 import Revisoes from "./Revisoes";
 import Documentos from "./Documentos";
@@ -35,7 +36,7 @@ function FotoVeiculo({ carro }) {
 }
 
 function Topo({ titulo, voltar }) {
-  return <header className="gr-page-top"><button type="button" onClick={voltar} aria-label="Voltar à garagem"><Icone nome="seta"/></button><h1>{titulo}</h1><span className="gr-mini-brand">CR</span></header>;
+  return <header className="gr-page-top"><BotaoVoltar onClick={voltar} /><h1>{titulo}</h1><span className="gr-mini-brand">CR</span></header>;
 }
 
 function Seletor({ tipo, carros, escolher, fechar }) {
@@ -51,6 +52,7 @@ function Seletor({ tipo, carros, escolher, fechar }) {
 }
 
 function FipeVeiculo({ carro }) {
+  const db = useDb();
   const [atual, setAtual] = useState(carro);
   const [ocupado, setOcupado] = useState(false);
   const [mensagem, setMensagem] = useState("");
@@ -67,6 +69,7 @@ function FipeVeiculo({ carro }) {
 }
 
 export default function GaragemHome({ carros, resumo, onAdicionar, onAbrirCarro, onVeiculos, onAlertas }) {
+  const db = useDb();
   const [selecionar, setSelecionar] = useState(null);
   const [pagina, setPagina] = useState(null);
   const [mais, setMais] = useState(false);
@@ -92,8 +95,8 @@ export default function GaragemHome({ carros, resumo, onAdicionar, onAbrirCarro,
   const voltar = () => setPagina(null);
   if (pagina) {
     return <div className="gr-feature-page"><Topo titulo={`${pagina.tipo}${pagina.carro ? ` · ${pagina.carro.name}` : ""}`} voltar={voltar}/>
-      {pagina.tipo === "Abastecimentos" && <AbastecimentosCarro carId={pagina.carro.id} aoVoltar={voltar}/>}
-      {pagina.tipo === "Manutenções" && <Revisoes carId={pagina.carro.id} onBack={voltar}/>}
+      {pagina.tipo === "Abastecimentos" && <AbastecimentosCarro carId={pagina.carro.id}/>}
+      {pagina.tipo === "Manutenções" && <Revisoes carId={pagina.carro.id}/>}
       {pagina.tipo === "Documentos" && <Documentos carId={pagina.carro.id}/>}
       {pagina.tipo === "Tabela FIPE" && <FipeVeiculo key={pagina.carro.id} carro={pagina.carro}/>}
       {pagina.tipo === "Relatórios" && <section className="gr-info-panel"><small>RESUMO DA GARAGEM</small><h2>Seus registros</h2><p className="gr-report-note">Dados salvos neste dispositivo. Atualizado em {new Date().toLocaleDateString("pt-BR")}.</p>{erro ? <p role="alert">{erro}</p> : <><div className="gr-report-row"><span>Veículos</span><b>{carros.length}</b></div><div className="gr-report-row"><span>Abastecimentos</span><b>{dados.abastecimentos.length}</b></div><div className="gr-report-row"><span>Manutenções</span><b>{dados.services.length}</b></div><div className="gr-report-row"><span>Total em abastecimentos</span><b>{dados.abastecimentos.reduce((n,a) => n + (Number(a.precoTotal) || 0), 0).toLocaleString("pt-BR", {style:"currency",currency:"BRL"})}</b></div><div className="gr-report-row"><span>Revisões vencidas</span><b>{resumo.vencidas}</b></div><button type="button" className="gr-add" onClick={() => window.print()}>Imprimir / salvar PDF</button></>}</section>}
