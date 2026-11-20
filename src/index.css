@@ -2572,37 +2572,45 @@ body, #root { background:#020f08; }
 .gr-shortcut.red svg { color:#f21f37; }
 .gr-shortcut.white svg { color:#f2f0e6; }
 .gr-shortcut.gr-alertas-pendentes {
-  border-color: #ff616e;
-  box-shadow: 0 0 0 2px #ff616e38;
+  border-color: #ff5366;
+  background: linear-gradient(135deg, #6c1726, #3b0b16);
+  box-shadow: inset 0 0 0 1px #ff5366, 0 0 0 2px #ff53665e;
 }
 
 .gr-alertas-pendentes svg {
-  color: #ff616e;
-  filter: drop-shadow(0 0 3px #ff465973);
+  color: #ff7e8d;
+  filter: drop-shadow(0 0 4px #ff4053b3);
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .gr-shortcut.gr-alertas-pendentes {
-    animation: gr-alertas-contorno 2.4s ease-in-out infinite;
+    animation: gr-alertas-contorno 1.8s ease-in-out infinite;
   }
 
   .gr-alertas-pendentes svg {
-    animation: gr-alertas-sino 2.4s ease-in-out infinite;
+    animation: gr-alertas-sino 1.8s ease-in-out infinite;
   }
 }
 
 @keyframes gr-alertas-contorno {
-  0%, 100% { border-color: #ff616e; box-shadow: 0 0 0 2px #ff616e38; }
-  50% { border-color: #ff9aa3; box-shadow: 0 0 12px 3px #ff465978; }
+  0%, 100% { border-color: #ff5366; box-shadow: inset 0 0 0 1px #ff5366, 0 0 0 2px #ff53665e; }
+  50% { border-color: #ff9ca8; box-shadow: inset 0 0 0 2px #ff9ca8, 0 0 14px 4px #ff4053b3; }
 }
 
 @keyframes gr-alertas-sino {
-  0%, 100% { color: #ff616e; filter: drop-shadow(0 0 3px #ff465973); }
-  50% { color: #ff9aa3; filter: drop-shadow(0 0 6px #ff4659c7); }
+  0%, 100% { color: #ff7e8d; filter: drop-shadow(0 0 4px #ff4053b3); }
+  50% { color: #ffd1d6; filter: drop-shadow(0 0 8px #ff5366); }
 }
 
 .gr-shortcut strong { font-size:12px; font-weight:500; letter-spacing:-.25px; white-space:nowrap; color:#f4f4ed; }
 .gr-shortcut small { color:#c1c5b9; font-size:10px; line-height:1.3; }
+.gr-shortcut.gr-alertas-pendentes small {
+  color: #fff0f2;
+  font-weight: 700;
+  background: #8b2334;
+  border-radius: 10px;
+  padding: 2px 6px;
+}
 .gr-signature { text-align:center; font-size:9px; letter-spacing:2.2px; color:#81937b; margin:28px 0 0; }
 .gr-bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:760px; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); padding:8px 9px calc(9px + env(safe-area-inset-bottom)); background:#001108f5; border-top:1px solid #31472d; backdrop-filter:blur(14px); z-index:20; }
 .gr-bottom-nav button { display:flex; flex-direction:column; align-items:center; gap:5px; padding:8px 0 4px; min-height:49px; color:#a6aea1; border:0; background:transparent; border-radius:9px; }
