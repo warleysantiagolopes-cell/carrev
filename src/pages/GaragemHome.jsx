@@ -123,7 +123,7 @@ export default function GaragemHome({
     {nome:"Abastecimentos",icone:"bomba",cor:"red",sub:contador(dados.abastecimentos.length),acao:() => escolher("Abastecimentos")},
     {nome:"Manutenções",icone:"chave",sub:contador(dados.services.length),acao:() => escolher("Manutenções")},
     {nome:"Documentos",icone:"documento",cor:"white",sub:"CRLV e IPVA",acao:() => escolher("Documentos")},
-    {nome:"Alertas",icone:"sino",sub:`${pendentes} pendente${pendentes === 1 ? "" : "s"}`,acao:() => onAlertas("TODAS")},
+    {nome:"Alertas",icone:"sino",cor:pendentes > 0 ? "gr-alertas-pendentes" : undefined,sub:`${pendentes} pendente${pendentes === 1 ? "" : "s"}`,acao:() => onAlertas("TODAS")},
     {nome:"Relatórios",icone:"grafico",sub:"Resumo e PDF",acao:() => { setCarregando(true); setPagina({tipo:"Relatórios"}); }},
     {nome:"Tabela FIPE",icone:"moedas",sub:"Consultar valores",acao:() => escolher("Tabela FIPE")},
   ];
