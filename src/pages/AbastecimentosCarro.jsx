@@ -3,6 +3,7 @@ import BotaoVoltar from "./BotaoVoltar";
 
 import { useEffect, useMemo, useState } from "react";
 import { useDb } from "../db/db";
+import { calcularConsumo } from "../services/consumo";
 import { atualizarFipeDoCarro } from "../services/fipe";
 
 function hojeISO() {
@@ -255,82 +256,7 @@ export default function AbastecimentosCarro({
      CONSUMO
   ================================================== */
 
-  const consumo = useMemo(() => {
-    const cheios = historico
-      .filter((a) => a.tanqueCheio)
-      .slice()
-      .sort(
-        (a, b) =>
-          (a.km || 0) -
-          (b.km || 0)
-      );
-
-    const trechos = [];
-
-    for (
-      let i = 1;
-      i < cheios.length;
-      i++
-    ) {
-      const anterior =
-        cheios[i - 1];
-
-      const atual =
-        cheios[i];
-
-      const distancia =
-        (atual.km || 0) -
-        (anterior.km || 0);
-
-      const litrosUsados =
-        Number(atual.litros);
-
-      if (
-        distancia > 0 &&
-        Number.isFinite(litrosUsados) &&
-        litrosUsados > 0
-      ) {
-        const kmPorLitro =
-          distancia / litrosUsados;
-
-        const litrosPor100 =
-          (litrosUsados / distancia) *
-          100;
-
-        trechos.push({
-          data: atual.data,
-          deKm: anterior.km,
-          paraKm: atual.km,
-          distancia,
-          litrosUsados,
-          kmPorLitro,
-          litrosPor100,
-        });
-      }
-    }
-
-    const ultimo =
-      trechos.length
-        ? trechos[
-            trechos.length - 1
-          ]
-        : null;
-
-    const mediaKmL =
-      trechos.length
-        ? trechos.reduce(
-            (s, t) =>
-              s + t.kmPorLitro,
-            0
-          ) / trechos.length
-        : null;
-
-    return {
-      trechos,
-      ultimo,
-      mediaKmL,
-    };
-  }, [historico]);
+  const consumo = useMemo(() => calcularConsumo(historico), [historico]);
 
   /* ==================================================
      CARRO NÃO ENCONTRADO

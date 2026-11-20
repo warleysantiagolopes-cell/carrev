@@ -41,42 +41,44 @@ export function abrirBancoGaragem(garagemId) {
     return novo;
   }
 
-  async function lerRegistro({ id, dados }, lista) {
+  async function lerRegistro({ id, dados }, lista, exigirArquivos = false) {
     const registro = { ...dados, id };
     if (lista) delete registro.crlvPdf;
 
     await Promise.all(camposArquivo.map(async campo => {
       const caminho = registro[campo]?.caminho;
-      if (!pertence(caminho)) return;
-      if (!fotos.has(caminho)) {
+      if (!pertence(caminho)) {
+        if (exigirArquivos && caminho) throw new Error("Arquivo fora da garagem ativa.");
+        return;
+      }
+      let leitura = fotos.get(caminho);
+      if (!leitura) {
+        leitura = resultado(arquivos.download(caminho));
         // O cache retém apenas fotos da listagem. Documentos e anexos são lidos sob demanda.
-        const leitura = resultado(arquivos.download(caminho));
         if (campo === "photo") {
           fotos.set(caminho, leitura);
           leitura.catch(() => fotos.delete(caminho));
-        } else {
-          registro[campo] = await leitura.catch(() => null);
-          return;
         }
-        registro[campo] = await leitura.catch(() => null);
-      } else {
-        registro[campo] = await fotos.get(caminho).catch(() => null);
       }
+      registro[campo] = await (exigirArquivos ? leitura : leitura.catch(() => null));
     }));
     return registro;
   }
 
   function tabela(tipo) {
-    const consulta = () => supabase.from("carrev_registros").select("id,dados")
+    const consulta = (campos = "id,dados") => supabase.from("carrev_registros").select(campos)
       .eq("garagem_id", garagemId).eq("tipo", tipo);
 
-    async function listar(filtros = []) {
+    async function listar(filtros = [], pais = null) {
       const registros = [];
       for (let inicio = 0; ; inicio += tamanhoPagina) {
-        let query = consulta();
+        let query = pais ? consulta("id,dados,pai_id").in("pai_id", pais) : consulta();
         for (const [campo, valor] of filtros) query = query.eq("dados->>" + campo, String(valor));
         const pagina = await resultado(query.order("id").range(inicio, inicio + tamanhoPagina - 1));
-        registros.push(...await Promise.all(pagina.map(registro => lerRegistro(registro, true))));
+        registros.push(...await Promise.all(pagina.map(async registro => {
+          const dados = await lerRegistro(registro, true, Boolean(pais));
+          return pais ? { ...dados, paiId: registro.pai_id } : dados;
+        })));
         if (pagina.length < tamanhoPagina) return registros;
       }
     }
@@ -116,9 +118,9 @@ export function abrirBancoGaragem(garagemId) {
           },
         };
       },
-      async get(id) {
+      async get(id, { exigirArquivos = false } = {}) {
         const registro = await resultado(consulta().eq("id", id).maybeSingle());
-        return registro ? lerRegistro(registro, false) : undefined;
+        return registro ? lerRegistro(registro, false, exigirArquivos) : undefined;
       },
       async add(dados) {
         const [id] = await inserir([dados]);
@@ -170,6 +172,19 @@ export function abrirBancoGaragem(garagemId) {
         };
       },
     };
+    if (tipo === "attachments") {
+      api.porRegistros = async ids => {
+        const anexos = new Map();
+        for (let i = 0; i < ids.length; i += 50) {
+          const lote = await listar([], ids.slice(i, i + 50));
+          for (const anexo of lote) {
+            if (!anexos.has(anexo.paiId)) anexos.set(anexo.paiId, []);
+            anexos.get(anexo.paiId).push(anexo);
+          }
+        }
+        return anexos;
+      };
+    }
     return api;
   }
 

@@ -8,6 +8,7 @@ import Revisoes from "./Revisoes";
 import Acabamentos from "./Acabamentos";
 import Desejos from "./Desejos";
 import Documentos from "./Documentos";
+import ImprimirFicha from "./ImprimirFicha";
 import { tiposLampadas } from "./LampadasVeiculo";
 import "./CarroDetalhe.css";
 
@@ -163,6 +164,7 @@ export default function CarroDetalhe({ carId, onBack }) {
 
       {carro && (
         <>
+          <ImprimirFicha key={carro.id} carId={carro.id} nomeCarro={carro.name || "Veículo"} />
           <nav className="ficha-abas" aria-label="Seções do veículo">
             {abas.map(({ id, titulo, icone }) => (
               <button key={id} type="button" aria-pressed={aba === id} onClick={() => setAba(id)}>

@@ -276,3 +276,35 @@
   vertical-align: middle;
   color: #f0cc42;
 }
+
+.ficha-exportacao {
+  margin: 0 0 14px;
+}
+
+.ficha-exportacao p {
+  margin: 8px 0;
+}
+
+.ficha-exportacao-opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #40553b;
+  border-radius: 12px;
+  background: #092412;
+}
+
+.ficha-exportacao-opcoes p {
+  width: 100%;
+}
+
+.ficha-exportacao-opcoes a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 10px;
+  color: #ffd000;
+}

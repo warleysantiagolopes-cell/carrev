@@ -4,66 +4,7 @@ import BotaoVoltar from "./BotaoVoltar";
 import { useEffect, useMemo, useState } from "react";
 import { useDb } from "../db/db";
 
-function diasAte(dataYYYYMMDD) {
-  const [y, m, d] = String(dataYYYYMMDD).split("-").map(Number);
-
-  if (!y || !m || !d) return null;
-
-  const alvo = new Date(
-    y,
-    m - 1,
-    d,
-    0,
-    0,
-    0,
-    0
-  );
-
-  const hoje = new Date();
-
-  const base = new Date(
-    hoje.getFullYear(),
-    hoje.getMonth(),
-    hoje.getDate(),
-    0,
-    0,
-    0,
-    0
-  );
-
-  const diffMs =
-    alvo.getTime() - base.getTime();
-
-  return Math.round(
-    diffMs / (1000 * 60 * 60 * 24)
-  );
-}
-
-function statusPorData(dias) {
-  if (dias == null) return "OK";
-  if (dias < 0) return "VENCIDA";
-  if (dias <= 14) return "EM BREVE";
-
-  return "OK";
-}
-
-function statusPorKm(kmRestante) {
-  if (kmRestante == null) return "OK";
-  if (kmRestante < 0) return "VENCIDA";
-  if (kmRestante <= 500) return "EM BREVE";
-
-  return "OK";
-}
-
-function piorStatus(a, b) {
-  const rank = {
-    VENCIDA: 3,
-    "EM BREVE": 2,
-    OK: 1,
-  };
-
-  return rank[a] >= rank[b] ? a : b;
-}
+import { calcularVencimento } from "../services/vencimentoRevisao";
 
 function formatarData(data) {
   if (!data) return "—";
@@ -162,37 +103,13 @@ export default function Proximas({
               ? carro.currentMileage
               : null;
 
-          const dias =
-            r.nextDate
-              ? diasAte(r.nextDate)
-              : null;
-
-          const kmRestante =
-            r.nextMileage != null &&
-            kmAtual != null
-              ? Number(r.nextMileage) -
-                Number(kmAtual)
-              : null;
-
-          let status = "OK";
-
-          status = piorStatus(
-            status,
-            statusPorData(dias)
-          );
-
-          status = piorStatus(
-            status,
-            statusPorKm(kmRestante)
-          );
+          const vencimento = calcularVencimento(r, kmAtual);
 
           return {
             ...r,
             carroNome,
             kmAtual,
-            diasAte: dias,
-            kmRestante,
-            status,
+            ...vencimento,
           };
         });
 
