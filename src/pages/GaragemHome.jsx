@@ -1,10 +1,12 @@
 import BotaoVoltar from "./BotaoVoltar";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useDb } from "../db/db";
 import AbastecimentosCarro from "./AbastecimentosCarro";
 import Revisoes from "./Revisoes";
 import Documentos from "./Documentos";
 import { atualizarFipeDoCarro } from "../services/fipe";
+
+const Relatorio = lazy(() => import("./Relatorio"));
 
 export function Icone({ nome, ...props }) {
   const paths = {
@@ -42,8 +44,9 @@ function Topo({ titulo, voltar }) {
 function Seletor({ tipo, carros, escolher, fechar }) {
   const box = useRef(null);
   useEffect(() => {
-    box.current?.showModal();
-    return () => box.current?.close();
+    const dialogo = box.current;
+    dialogo.showModal();
+    return () => dialogo.close();
   }, []);
   return <dialog ref={box} className="gr-dialog" onCancel={fechar} onClick={e => { if (e.target === e.currentTarget) fechar(); }} aria-labelledby="gr-picker-title">
     <div className="gr-dialog-head"><div><small>{tipo}</small><h2 id="gr-picker-title">Escolha o veículo</h2></div><button type="button" onClick={fechar} aria-label="Fechar">×</button></div>
@@ -68,38 +71,52 @@ function FipeVeiculo({ carro }) {
   return <section className="gr-info-panel"><h2>{atual.name}</h2><p>{atual.fipeBrand} {atual.fipeModel}</p><small>Valor de referência FIPE</small><strong className="gr-fipe-value">{atual.fipeValueFormatted || "Não configurado"}</strong><p>{atual.fipeReference || "Configure marca, modelo e ano na edição do veículo, em Meus veículos."}</p><p>Código FIPE: {atual.fipeCode || "—"}</p><button type="button" className="gr-add" onClick={atualizar} disabled={ocupado || !atual.fipeCode || !atual.fipeYearId}>{ocupado ? "Consultando…" : "Atualizar valor FIPE"}</button><p role="status">{mensagem}</p></section>;
 }
 
-export default function GaragemHome({ carros, resumo, onAdicionar, onAbrirCarro, onVeiculos, onAlertas }) {
+export default function GaragemHome({
+  carros, resumo, nomeGaragem, menuAberto, onMenu, destinoInicial, onVoltarInicio,
+  onAdicionar, onAbrirCarro, onVeiculos, onAlertas,
+}) {
   const db = useDb();
-  const [selecionar, setSelecionar] = useState(null);
-  const [pagina, setPagina] = useState(null);
-  const [mais, setMais] = useState(false);
+  const porVeiculo = ["Abastecimentos", "Manutenções", "Documentos", "Tabela FIPE"].includes(destinoInicial);
+  const [selecionar, setSelecionar] = useState(porVeiculo && carros.length > 1 ? destinoInicial : null);
+  const [pagina, setPagina] = useState(() => {
+    if (destinoInicial === "Relatórios") return { tipo: destinoInicial };
+    if (porVeiculo && carros.length <= 1) return { tipo: destinoInicial, carro: carros[0] };
+    return null;
+  });
   const [dados, setDados] = useState({ abastecimentos: [], services: [] });
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
   useEffect(() => {
     let ativo = true;
     Promise.all([db.abastecimentos.toArray(), db.services.toArray()])
-      .then(([abastecimentos, services]) => { if (ativo) setDados({ abastecimentos, services }); })
+      .then(([abastecimentos, services]) => { if (ativo) { setDados({ abastecimentos, services }); setErro(""); } })
       .catch(() => { if (ativo) setErro("Não foi possível carregar os totais. Reabra a garagem para tentar novamente."); })
       .finally(() => { if (ativo) setCarregando(false); });
     return () => { ativo = false; };
-  }, [pagina]);
+  }, [db, pagina]);
   function escolher(tipo) {
-    setMais(false);
     if (!carros.length) { onAdicionar(); return; }
     if (carros.length === 1) setPagina({ tipo, carro: carros[0] });
     else setSelecionar(tipo);
   }
   const pendentes = resumo.emBreve + resumo.vencidas;
   const contador = n => carregando ? "Carregando…" : erro ? "Ver registros" : `${n} registro${n === 1 ? "" : "s"}`;
-  const voltar = () => setPagina(null);
+  const voltar = () => { setPagina(null); onVoltarInicio(); };
+  const fecharSeletor = () => { setSelecionar(null); onVoltarInicio(); };
   if (pagina) {
     return <div className="gr-feature-page"><Topo titulo={`${pagina.tipo}${pagina.carro ? ` · ${pagina.carro.name}` : ""}`} voltar={voltar}/>
-      {pagina.tipo === "Abastecimentos" && <AbastecimentosCarro carId={pagina.carro.id}/>}
-      {pagina.tipo === "Manutenções" && <Revisoes carId={pagina.carro.id}/>}
-      {pagina.tipo === "Documentos" && <Documentos carId={pagina.carro.id}/>}
-      {pagina.tipo === "Tabela FIPE" && <FipeVeiculo key={pagina.carro.id} carro={pagina.carro}/>}
-      {pagina.tipo === "Relatórios" && <section className="gr-info-panel"><small>RESUMO DA GARAGEM</small><h2>Seus registros</h2><p className="gr-report-note">Dados salvos neste dispositivo. Atualizado em {new Date().toLocaleDateString("pt-BR")}.</p>{erro ? <p role="alert">{erro}</p> : <><div className="gr-report-row"><span>Veículos</span><b>{carros.length}</b></div><div className="gr-report-row"><span>Abastecimentos</span><b>{dados.abastecimentos.length}</b></div><div className="gr-report-row"><span>Manutenções</span><b>{dados.services.length}</b></div><div className="gr-report-row"><span>Total em abastecimentos</span><b>{dados.abastecimentos.reduce((n,a) => n + (Number(a.precoTotal) || 0), 0).toLocaleString("pt-BR", {style:"currency",currency:"BRL"})}</b></div><div className="gr-report-row"><span>Revisões vencidas</span><b>{resumo.vencidas}</b></div><button type="button" className="gr-add" onClick={() => window.print()}>Imprimir / salvar PDF</button></>}</section>}
+      {pagina.tipo === "Abastecimentos" && pagina.carro && <AbastecimentosCarro carId={pagina.carro.id}/>}
+      {pagina.tipo === "Manutenções" && pagina.carro && <Revisoes carId={pagina.carro.id}/>}
+      {pagina.tipo === "Documentos" && pagina.carro && <Documentos carId={pagina.carro.id}/>}
+      {pagina.tipo === "Tabela FIPE" && pagina.carro && <FipeVeiculo key={pagina.carro.id} carro={pagina.carro}/>}
+      {!pagina.carro && pagina.tipo !== "Relatórios" && <section className="gr-info-panel">
+        <p>Adicione um veículo para acessar esta seção.</p>
+        <button type="button" className="gr-add" onClick={onAdicionar}>Adicionar veículo</button>
+      </section>}
+      {pagina.tipo === "Relatórios" && <Suspense fallback={<p role="status">Abrindo relatório…</p>}>
+        <Relatorio nomeGaragem={nomeGaragem} carros={carros} resumo={resumo} dados={dados}
+          erro={erro} carregando={carregando} />
+      </Suspense>}
     </div>;
   }
   const atalhos = [
@@ -107,14 +124,14 @@ export default function GaragemHome({ carros, resumo, onAdicionar, onAbrirCarro,
     {nome:"Manutenções",icone:"chave",sub:contador(dados.services.length),acao:() => escolher("Manutenções")},
     {nome:"Documentos",icone:"documento",cor:"white",sub:"CRLV e IPVA",acao:() => escolher("Documentos")},
     {nome:"Alertas",icone:"sino",sub:`${pendentes} pendente${pendentes === 1 ? "" : "s"}`,acao:() => onAlertas("TODAS")},
-    {nome:"Relatórios",icone:"grafico",sub:"Resumo e PDF",acao:() => {setMais(false);setPagina({tipo:"Relatórios"});}},
+    {nome:"Relatórios",icone:"grafico",sub:"Resumo e PDF",acao:() => { setCarregando(true); setPagina({tipo:"Relatórios"}); }},
     {nome:"Tabela FIPE",icone:"moedas",sub:"Consultar valores",acao:() => escolher("Tabela FIPE")},
   ];
   return <div className="gr-home">
-    <header className="gr-topbar"><button type="button" aria-label="Abrir menu" onClick={() => setMais(!mais)}><Icone nome="menu"/></button><div className="gr-wordmark" aria-label="CarRev">Car<span>Rev</span></div><button type="button" aria-label={`Alertas: ${pendentes} pendentes`} onClick={() => onAlertas("TODAS")} className="gr-bell"><Icone nome="sino"/>{pendentes > 0 && <span className="gr-notification-dot"/>}</button></header>
+    <header className="gr-topbar"><button type="button" aria-label="Mais opções" aria-expanded={menuAberto} aria-controls={menuAberto ? "gr-menu" : undefined} onClick={onMenu}><Icone nome="menu"/></button><div className="gr-wordmark" aria-label="CarRev">Car<span>Rev</span></div><button type="button" aria-label={`Alertas: ${pendentes} pendentes`} onClick={() => onAlertas("TODAS")} className="gr-bell"><Icone nome="sino"/>{pendentes > 0 && <span className="gr-notification-dot"/>}</button></header>
     <div className="gr-stripes" aria-hidden="true"/>
     <main className="gr-main">
-      <div className="gr-heading"><div><h1>Minha Garagem</h1><p>{carros.length} veículo{carros.length === 1 ? "" : "s"} cadastrado{carros.length === 1 ? "" : "s"}</p></div><button type="button" className="gr-text-button" onClick={onVeiculos}>Ver todos <span>→</span></button></div>
+      <div className="gr-heading"><div><h1>{nomeGaragem}</h1><p>{carros.length} veículo{carros.length === 1 ? "" : "s"} cadastrado{carros.length === 1 ? "" : "s"}</p></div><button type="button" className="gr-text-button" onClick={onVeiculos}>Ver todos <span>→</span></button></div>
       <div className="gr-car-carousel" aria-label="Veículos da garagem">
         {carros.map(c => <article className="gr-vehicle" key={c.id}><button type="button" className="gr-vehicle-open" onClick={() => onAbrirCarro(c.id)}><div className="gr-vehicle-photo"><FotoVeiculo carro={c}/></div><div className="gr-vehicle-label"><h2>{c.name}</h2><p>{[c.year,c.model].filter(Boolean).join(" • ") || "Ver ficha do veículo"}</p></div></button><button type="button" className="gr-vehicle-menu" aria-label={`Opções de ${c.name}`} onClick={onVeiculos}><Icone nome="pontos"/></button></article>)}
         {!carros.length && <button type="button" className="gr-first-car" onClick={onAdicionar}><Icone nome="carro"/><strong>Sua história começa aqui</strong><span>Adicione seu primeiro veículo</span></button>}
@@ -124,8 +141,6 @@ export default function GaragemHome({ carros, resumo, onAdicionar, onAbrirCarro,
       {erro && <p className="gr-inline-error" role="alert">{erro}</p>}
       <p className="gr-signature">SUA GARAGEM, SUA HISTÓRIA.</p>
     </main>
-    {mais && <div className="gr-more"><div className="gr-more-heading"><strong>Mais opções</strong><button type="button" onClick={() => setMais(false)} aria-label="Fechar menu">×</button></div><button type="button" onClick={onVeiculos}>Meus veículos <span>→</span></button><button type="button" onClick={() => {setMais(false);onAdicionar();}}>Adicionar veículo <span>＋</span></button>{atalhos.slice(2).map(a => <button type="button" key={a.nome} onClick={() => {setMais(false);a.acao();}}>{a.nome}<span>→</span></button>)}</div>}
-    <nav className="gr-bottom-nav" aria-label="Navegação principal"><button type="button" className={!mais ? "active" : ""} aria-current={!mais ? "page" : undefined} onClick={() => {setMais(false);window.scrollTo({top:0,behavior:"smooth"});}}><Icone nome="casa"/><span>Início</span></button><button type="button" onClick={onVeiculos}><Icone nome="carro"/><span>Veículos</span></button><button type="button" onClick={() => escolher("Abastecimentos")}><Icone nome="bomba"/><span>Abastec.</span></button><button type="button" onClick={() => escolher("Manutenções")}><Icone nome="chave"/><span>Manutenções</span></button><button type="button" className={mais ? "active" : ""} onClick={() => setMais(!mais)} aria-expanded={mais}><Icone nome="menu"/><span>Mais</span></button></nav>
-    {selecionar && <Seletor tipo={selecionar} carros={carros} fechar={() => setSelecionar(null)} escolher={c => {setPagina({tipo:selecionar,carro:c});setSelecionar(null);}}/>}
+    {selecionar && <Seletor tipo={selecionar} carros={carros} fechar={fecharSeletor} escolher={c => {setPagina({tipo:selecionar,carro:c});setSelecionar(null);}}/>}
   </div>;
 }

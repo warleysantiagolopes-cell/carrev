@@ -189,23 +189,35 @@ function Garagens({ usuario, convite, descartarConvite }) {
     });
   }
 
+  const controlesGaragem = (
+    <section className="nuvem-barra" aria-label="Garagem ativa">
+      <div className="nuvem-acoes">
+        {garagem && <label>Garagem ativa<select value={ativa} disabled={ocupado} onChange={e => { setCriacao(false); setErro(""); setAtiva(e.target.value); }}>
+          {lista.map(item => <option key={item.id} value={item.id}>{item.nome}</option>)}
+        </select></label>}
+        {(garagem || erro) && <button type="button" disabled={ocupado} onClick={() => setCriacao(!criacao)}>Nova garagem</button>}
+        <button type="button" disabled={ocupado} onClick={() => executar(async () => {
+          await atualizar();
+          setVersao(v => v + 1);
+        })}>Atualizar</button>
+        <button type="button" disabled={ocupado} onClick={() => executar(() => resultado(supabase.auth.signOut({ scope: "local" })))}>Sair</button>
+      </div>
+      {erro && !convite && <p role="alert">{erro}</p>}
+      {(criacao || (!garagem && !convite && !carregando && !erro)) && (
+        <form onSubmit={criar} className="nuvem-painel">
+          <label>Nome da nova garagem<input name="nome" maxLength={80} placeholder="Minha garagem" required /></label>
+          <button type="submit" className="nuvem-principal" disabled={ocupado}>Criar garagem</button>
+        </form>
+      )}
+      {garagem?.dono === usuario.id && <Configuracoes key={garagem.id + ":" + garagem.nome} garagem={garagem}
+        ocupado={ocupado} executar={executar} atualizar={atualizar} />}
+    </section>
+  );
+
   return (
     <>
-      <section className="nuvem-barra" aria-label="Garagem ativa">
-        <div className="nuvem-acoes">
-          {garagem && <label>Garagem ativa<select value={ativa} onChange={e => setAtiva(e.target.value)}>
-            {lista.map(item => <option key={item.id} value={item.id}>{item.nome}</option>)}
-          </select></label>}
-          <button type="button" onClick={() => setCriacao(!criacao)}>Nova garagem</button>
-          <button type="button" disabled={ocupado} onClick={() => executar(async () => {
-            await atualizar();
-            setVersao(v => v + 1);
-          })}>Atualizar</button>
-          <button type="button" disabled={ocupado} onClick={() => executar(() => resultado(supabase.auth.signOut({ scope: "local" })))}>Sair</button>
-        </div>
-        {carregando && <p role="status">Carregando garagens…</p>}
-        {erro && <p role="alert">{erro}</p>}
-        {convite && <div className="nuvem-painel">
+      {convite && <section className="nuvem-barra" aria-label="Convite">
+        <div className="nuvem-painel">
           <p>Você recebeu um convite para acessar uma garagem como editor.</p>
           <div className="nuvem-acoes">
             <button type="button" className="nuvem-principal" disabled={ocupado} onClick={() => executar(async () => {
@@ -216,19 +228,17 @@ function Garagens({ usuario, convite, descartarConvite }) {
             })}>Aceitar convite</button>
             <button type="button" disabled={ocupado} onClick={descartarConvite}>Dispensar</button>
           </div>
-        </div>}
-        {(criacao || (!garagem && !convite && !carregando && !erro)) && (
-          <form onSubmit={criar} className="nuvem-painel">
-            <label>Nome da nova garagem<input name="nome" maxLength={80} placeholder="Minha garagem" required /></label>
-            <button type="submit" className="nuvem-principal" disabled={ocupado}>Criar garagem</button>
-          </form>
-        )}
-        {garagem?.dono === usuario.id && <Configuracoes key={garagem.id} garagem={garagem}
-          ocupado={ocupado} executar={executar} atualizar={atualizar} />}
-      </section>
+        </div>
+        {erro && <p role="alert">{erro}</p>}
+      </section>}
+      {!garagem && (
+        carregando
+          ? <p className="nuvem-barra" role="status">Carregando garagens…</p>
+          : controlesGaragem
+      )}
       {garagem && db && (
         <DbContext.Provider value={db}>
-          <App key={garagem.id + ":" + versao} />
+          <App key={garagem.id + ":" + versao} nomeGaragem={garagem.nome} controlesGaragem={controlesGaragem} />
         </DbContext.Provider>
       )}
     </>

@@ -1,5 +1,5 @@
 import BotaoVoltar from "./BotaoVoltar";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDb } from "../db/db";
 
 const TIPOS_REVISAO = [
@@ -53,7 +53,7 @@ async function listarAnexos(db, ownerType, ownerId) {
     .toArray();
 }
 
-async function adicionarAnexos(db, ownerType, ownerId, files, category = "foto") {
+async function adicionarAnexos(db, ownerType, ownerId, files) {
   const arr = Array.from(files || []);
   if (arr.length === 0) return;
 
@@ -62,10 +62,31 @@ async function adicionarAnexos(db, ownerType, ownerId, files, category = "foto")
     arr.map((f) => ({
       ownerType,
       ownerId: Number(ownerId),
-      category,
+      category: f.type.startsWith("image/") ? "foto" : "arquivo",
+      nomeArquivo: f.name,
       blob: f,
       createdAt: now,
     }))
+  );
+}
+
+function SeletorAnexos({ onSelecionar, desabilitado }) {
+  const arquivos = useRef(null);
+  const camera = useRef(null);
+
+  function selecionar(evento) {
+    const selecionados = Array.from(evento.currentTarget.files);
+    evento.currentTarget.value = "";
+    if (selecionados.length) onSelecionar(selecionados);
+  }
+
+  return (
+    <div className="gr-attachment-actions">
+      <input ref={arquivos} type="file" multiple hidden onChange={selecionar} />
+      <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={selecionar} />
+      <button type="button" disabled={desabilitado} onClick={() => arquivos.current.click()}>Escolher arquivos</button>
+      <button type="button" disabled={desabilitado} onClick={() => camera.current.click()}>Tirar foto</button>
+    </div>
   );
 }
 
@@ -81,7 +102,9 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
   const [proximaData, setProximaData] = useState("");
   const [proximoKm, setProximoKm] = useState("");
   const [observacoes, setObservacoes] = useState("");
-  const [fotosNovas, setFotosNovas] = useState([]);
+  const [anexosNovos, setAnexosNovos] = useState([]);
+  const [salvando, setSalvando] = useState(false);
+  const [erroCadastro, setErroCadastro] = useState("");
 
   // edição
   const [editId, setEditId] = useState(null);
@@ -145,28 +168,38 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
     if (mileage != null && (!Number.isFinite(mileage) || mileage < 0)) return;
     if (nextMileage != null && (!Number.isFinite(nextMileage) || nextMileage < 0)) return;
 
-    const serviceId = await db.services.add({
-      carId: carIdNum,
-      type: tipo,
-      date: data,
-      mileage,
-      nextDate: proximaData || null,
-      nextMileage,
-      notes: observacoes.trim() || "",
-      createdAt: new Date().toISOString(),
-    });
-
-    if (fotosNovas?.length) {
-      await adicionarAnexos(db, "service", serviceId, fotosNovas, "foto");
+    if (salvando) return;
+    setSalvando(true);
+    setErroCadastro("");
+    let serviceId;
+    try {
+      serviceId = await db.services.add({
+        carId: carIdNum,
+        type: tipo,
+        date: data,
+        mileage,
+        nextDate: proximaData || null,
+        nextMileage,
+        notes: observacoes.trim() || "",
+        createdAt: new Date().toISOString(),
+      });
+      await adicionarAnexos(db, "service", serviceId, anexosNovos);
+    } catch {
+      setErroCadastro(serviceId
+        ? "Revisão salva. Os anexos falharam e podem ser enviados pelo Histórico."
+        : "Não foi possível salvar a revisão. Tente novamente.");
+    } finally {
+      setSalvando(false);
     }
 
-    setKm("");
-    setProximaData("");
-    setProximoKm("");
-    setObservacoes("");
-    setFotosNovas([]);
-
-    await carregar();
+    if (serviceId) {
+      setKm("");
+      setProximaData("");
+      setProximoKm("");
+      setObservacoes("");
+      setAnexosNovos([]);
+      await carregar();
+    }
   }
 
   async function excluirRevisao(id) {
@@ -310,19 +343,21 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
           />
         </label>
 
-        <label>
-          Fotos da revisão (opcional — pode escolher várias)
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            multiple
-            onChange={(e) => setFotosNovas(e.target.files ? Array.from(e.target.files) : [])}
-            style={{ display: "block", width: "100%" }}
-          />
-        </label>
+        <fieldset className="gr-attachment-picker">
+          <legend>Anexos da revisão (opcional)</legend>
+          <SeletorAnexos desabilitado={salvando} onSelecionar={arquivos => setAnexosNovos(atuais => [...atuais, ...arquivos])} />
+          {anexosNovos.length > 0 && <ul>
+            {anexosNovos.map((arquivo, indice) => <li key={indice}>
+              {arquivo.name}{" "}
+              <button type="button" disabled={salvando} onClick={() => setAnexosNovos(atuais => atuais.filter((_, i) => i !== indice))}>
+                Remover
+              </button>
+            </li>)}
+          </ul>}
+        </fieldset>
 
-        <button type="submit">Adicionar</button>
+        <button type="submit" disabled={salvando}>{salvando ? "Salvando…" : "Adicionar"}</button>
+        {erroCadastro && <p role="alert">{erroCadastro}</p>}
       </form>
 
       <h3 style={{ marginTop: 20 }}>Histórico</h3>
@@ -451,6 +486,8 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
 function FotosDaEntidade({ ownerType, ownerId }) {
   const db = useDb();
   const [anexos, setAnexos] = useState([]);
+  const [enviando, setEnviando] = useState(false);
+  const [erroEnvio, setErroEnvio] = useState("");
 
   async function carregar() {
     const list = await db.attachments
@@ -467,9 +504,16 @@ function FotosDaEntidade({ ownerType, ownerId }) {
   }, [ownerType, ownerId]);
 
   async function adicionarMais(files) {
-    if (!files || files.length === 0) return;
-    await adicionarAnexos(db, ownerType, ownerId, files, "foto");
-    await carregar();
+    setEnviando(true);
+    setErroEnvio("");
+    try {
+      await adicionarAnexos(db, ownerType, ownerId, files);
+      await carregar();
+    } catch {
+      setErroEnvio("Não foi possível adicionar os anexos.");
+    } finally {
+      setEnviando(false);
+    }
   }
 
   async function remover(attachId) {
@@ -479,27 +523,17 @@ function FotosDaEntidade({ ownerType, ownerId }) {
 
   return (
     <div style={{ marginTop: 10 }}>
-      <strong>Fotos:</strong>
-      <div style={{ marginTop: 6 }}>
-        <label style={{ fontSize: 12 }}>
-          Adicionar mais fotos:
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            multiple
-            onChange={(e) => adicionarMais(e.target.files ? Array.from(e.target.files) : [])}
-            style={{ display: "block" }}
-          />
-        </label>
-      </div>
+      <strong>Anexos</strong>
+      <SeletorAnexos onSelecionar={adicionarMais} desabilitado={enviando} />
+      {enviando && <p role="status">Enviando anexos…</p>}
+      {erroEnvio && <p role="alert">{erroEnvio}</p>}
 
       {anexos.length === 0 ? (
-        <p style={{ fontSize: 13, marginTop: 6 }}>Nenhuma foto anexada.</p>
+        <p style={{ fontSize: 13, marginTop: 6 }}>Nenhum anexo.</p>
       ) : (
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
           {anexos.map((a) => (
-            <FotoAnexo key={a.id} anexo={a} onRemover={() => remover(a.id)} />
+            <Anexo key={a.id} anexo={a} onRemover={() => remover(a.id)} />
           ))}
         </div>
       )}
@@ -507,34 +541,25 @@ function FotosDaEntidade({ ownerType, ownerId }) {
   );
 }
 
-function FotoAnexo({ anexo, onRemover }) {
-  const [url, setUrl] = useState(null);
+function Anexo({ anexo, onRemover }) {
+  const elemento = useRef(null);
+  const disponivel = anexo.blob instanceof Blob;
+  const imagem = anexo.blob?.type?.startsWith("image/") || anexo.category === "foto";
+  const nome = anexo.nomeArquivo || (imagem ? "Foto da revisão" : "Arquivo da revisão");
 
   useEffect(() => {
-    if (url) URL.revokeObjectURL(url);
-    setUrl(URL.createObjectURL(anexo.blob));
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anexo.id]);
+    if (!disponivel) return;
+    const url = URL.createObjectURL(anexo.blob);
+    elemento.current.setAttribute(imagem ? "src" : "href", url);
+    return () => URL.revokeObjectURL(url);
+  }, [anexo.blob, disponivel, imagem]);
 
   return (
-    <div style={{ width: 120 }}>
-      <img
-        src={url}
-        alt="Anexo"
-        style={{
-          width: 120,
-          height: 120,
-          objectFit: "cover",
-          borderRadius: 8,
-          border: "1px solid #ccc",
-        }}
-      />
-      <button onClick={onRemover} style={{ marginTop: 6, width: "100%" }}>
-        Remover
-      </button>
+    <div className="gr-attachment">
+      {disponivel && imagem && <img ref={elemento} alt={nome} />}
+      {disponivel && !imagem && <a ref={elemento} download={nome}>{nome}</a>}
+      {!disponivel && <span>Arquivo indisponível</span>}
+      <button type="button" onClick={onRemover}>Remover</button>
     </div>
   );
 }

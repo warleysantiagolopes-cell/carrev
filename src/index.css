@@ -2747,3 +2747,72 @@ body, #root { background:#020f08; }
     padding: 10px;
   }
 }
+
+.gr-app {
+  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+}
+
+.gr-app .gr-main {
+  padding-bottom: 28px;
+}
+
+.gr-heading h1, .gr-info-panel h2 {
+  overflow-wrap: anywhere;
+}
+
+.gr-more {
+  max-height: calc(100dvh - 100px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.gr-more .nuvem-barra {
+  margin-top: 10px;
+  padding: 10px 0 4px;
+  border-top: 1px solid #3c5437;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.gr-print {
+  margin-top: 10px;
+  min-height: 44px;
+  width: 100%;
+}
+
+@media print {
+  .gr-app { padding-bottom: 0; }
+  .gr-bottom-nav, .gr-more, .gr-print { display: none; }
+}
+
+.gr-attachment-picker {
+  min-width: 0;
+  border: 1px solid #40553b;
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+
+.gr-attachment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 6px;
+}
+
+.gr-attachment-actions button {
+  min-height: 44px;
+}
+
+.gr-attachment {
+  display: grid;
+  gap: 6px;
+  width: 135px;
+  overflow-wrap: anywhere;
+}
+
+.gr-attachment img {
+  width: 100%;
+  height: 120px;
+  border-radius: 8px;
+  object-fit: cover;
+}

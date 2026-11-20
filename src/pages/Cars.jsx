@@ -264,6 +264,10 @@ async function calcularBadgeDoCarro(db,
 
 export default function Cars({
   onAbrirProximas,
+  destinoInicial,
+  nomeGaragem,
+  menuAberto,
+  onMenu,
 }) {
   const db = useDb();
   const [
@@ -284,9 +288,12 @@ export default function Cars({
   const [
     mostrarCadastro,
     setMostrarCadastro,
-  ] = useState(false);
+  ] = useState(destinoInicial === "Adicionar veículo");
 
-  const [modoLista, setModoLista] = useState(false);
+  const [modoLista, setModoLista] = useState(destinoInicial === "Veículos");
+  const [destinoHome, setDestinoHome] = useState(destinoInicial);
+  const [carregandoGaragem, setCarregandoGaragem] = useState(true);
+  const [erroGaragem, setErroGaragem] = useState(false);
 
   const listaCarrosRef =
     useRef(null);
@@ -606,7 +613,9 @@ export default function Cars({
   }
 
   useEffect(() => {
-    carregarCarros();
+    carregarCarros()
+      .catch(() => setErroGaragem(true))
+      .finally(() => setCarregandoGaragem(false));
     carregarMarcasFipe();
   }, []);
 
@@ -733,6 +742,7 @@ export default function Cars({
   }
 
   function abrirCadastro() {
+    setDestinoHome("Início");
     cancelarEdicao();
     cancelarKm();
 
@@ -744,6 +754,7 @@ export default function Cars({
   }
 
   function cancelarCadastro() {
+    setDestinoHome("Início");
     limparCadastro();
 
     setMostrarCadastro(
@@ -1675,7 +1686,14 @@ export default function Cars({
   }
 
   if (!modoLista && !mostrarCadastro && editId == null && kmId == null) {
+    if (erroGaragem) return <p className="gr-feature-page" role="alert">Não foi possível carregar a garagem. Tente atualizar pelo menu Mais.</p>;
+    if (carregandoGaragem && destinoHome !== "Início") return <p className="gr-feature-page" role="status">Carregando garagem…</p>;
     return <GaragemHome
+      nomeGaragem={nomeGaragem}
+      menuAberto={menuAberto}
+      onMenu={onMenu}
+      destinoInicial={destinoHome}
+      onVoltarInicio={() => setDestinoHome("Início")}
       carros={carros}
       resumo={resumoGaragem}
       onAdicionar={abrirCadastro}
@@ -1691,7 +1709,7 @@ export default function Cars({
 
   return (
     <div className="carrev-home gr-vehicle-list-page">
-      <BotaoVoltar onClick={() => { setModoLista(false); setMostrarCadastro(false); cancelarEdicao(); cancelarKm(); carregarCarros(); }} />
+      <BotaoVoltar onClick={() => { setDestinoHome("Início"); setModoLista(false); setMostrarCadastro(false); cancelarEdicao(); cancelarKm(); carregarCarros(); }} />
 
 
       {!modoLista && (
