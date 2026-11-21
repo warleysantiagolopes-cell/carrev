@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import App from "../App";
 import { DbContext, abrirBancoGaragem } from "../db/db";
 import { resultado, rpc, supabase } from "../db/supabase";
@@ -145,6 +145,8 @@ function Garagens({ usuario, convite, descartarConvite }) {
   const [ocupado, setOcupado] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+  const [conviteVerificado, setConviteVerificado] = useState(null);
+  const [avisoConvite, setAvisoConvite] = useState("");
   const garagem = lista.find(item => item.id === ativa);
   const db = useMemo(() => ativa ? abrirBancoGaragem(ativa) : null, [ativa]);
   const chaveAtiva = "carrev.garagem." + usuario.id;
@@ -165,6 +167,39 @@ function Garagens({ usuario, convite, descartarConvite }) {
   useEffect(() => {
     if (ativa) localStorage.setItem(chaveAtiva, ativa);
   }, [ativa, chaveAtiva]);
+
+  useEffect(() => {
+    if (!convite) return;
+    let ativo = true;
+    rpc("convite_pendente", { p_token: convite }).then(pendente => {
+      if (!ativo) return;
+      if (pendente === false) descartarConvite(convite);
+      else setConviteVerificado(convite);
+    }).catch(() => {
+      // Preserva o convite em caso de falha temporária na consulta.
+      if (ativo) setConviteVerificado(convite);
+    });
+    return () => { ativo = false; };
+  }, [convite, descartarConvite]);
+
+  function aceitarConvite() {
+    executar(async () => {
+      setAvisoConvite("");
+      let id;
+      try {
+        id = await rpc("aceitar_convite", { p_token: convite });
+      } catch (falha) {
+        if (falha.message !== "Convite inválido, vencido, já usado ou da sua própria garagem.") throw falha;
+        descartarConvite(convite);
+        setAvisoConvite("Este convite não está mais disponível.");
+        await atualizar();
+        return;
+      }
+      descartarConvite(convite);
+      setCriacao(false);
+      await atualizar(id);
+    });
+  }
 
   async function executar(acao) {
     setOcupado(true);
@@ -216,17 +251,13 @@ function Garagens({ usuario, convite, descartarConvite }) {
 
   return (
     <>
-      {convite && <section className="nuvem-barra" aria-label="Convite">
+      {avisoConvite && !convite && <p role="status" className="nuvem-barra">{avisoConvite}</p>}
+      {convite && conviteVerificado === convite && <section className="nuvem-barra" aria-label="Convite">
         <div className="nuvem-painel">
           <p>Você recebeu um convite para acessar uma garagem como editor.</p>
           <div className="nuvem-acoes">
-            <button type="button" className="nuvem-principal" disabled={ocupado} onClick={() => executar(async () => {
-              const id = await rpc("aceitar_convite", { p_token: convite });
-              descartarConvite();
-              setCriacao(false);
-              await atualizar(id);
-            })}>Aceitar convite</button>
-            <button type="button" disabled={ocupado} onClick={descartarConvite}>Dispensar</button>
+            <button type="button" className="nuvem-principal" disabled={ocupado} onClick={aceitarConvite}>Aceitar convite</button>
+            <button type="button" disabled={ocupado} onClick={() => descartarConvite(convite)}>Dispensar</button>
           </div>
         </div>
         {erro && <p role="alert">{erro}</p>}
@@ -249,24 +280,31 @@ function NuvemConectada() {
   const [sessao, setSessao] = useState(undefined);
   const [convite, setConvite] = useState(lerConvite);
 
+  const descartarConvite = useCallback(token => {
+    if (localStorage.getItem(chaveConvite) === token) localStorage.removeItem(chaveConvite);
+    setConvite(atual => atual === token ? null : atual);
+  }, []);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, atual) => setSessao(atual));
     function novoLink() {
       setConvite(lerConvite());
     }
+    function sincronizarConvite(evento) {
+      if (evento.key === chaveConvite) setConvite(localStorage.getItem(chaveConvite));
+    }
     window.addEventListener("hashchange", novoLink);
+    window.addEventListener("storage", sincronizarConvite);
     return () => {
       subscription.unsubscribe();
       window.removeEventListener("hashchange", novoLink);
+      window.removeEventListener("storage", sincronizarConvite);
     };
   }, []);
 
   if (sessao === undefined) return <p className="nuvem-acesso" role="status">Carregando conta…</p>;
   if (!sessao) return <Acesso convite={convite} />;
-  return <Garagens key={sessao.user.id} usuario={sessao.user} convite={convite} descartarConvite={() => {
-    localStorage.removeItem(chaveConvite);
-    setConvite(null);
-  }} />;
+  return <Garagens key={sessao.user.id} usuario={sessao.user} convite={convite} descartarConvite={descartarConvite} />;
 }
 
 export default function Nuvem() {
