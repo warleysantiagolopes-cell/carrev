@@ -1,0 +1,102 @@
+.documentos-tela .documentos-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.documentos-tela .documento-card {
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.documentos-tela .documento-card.cnh-card:hover {
+  border-color: #ffd000;
+  background: #102d1c;
+}
+
+.documentos-tela :is(.documento-subtitulo, .documento-meta, .upload-pdf-texto, .documentos-aviso) {
+  color: #c3d0bc;
+}
+
+.documentos-tela :is(.pdf-icone, .cnh-icone) {
+  background: #243d21;
+  color: #ffd000;
+}
+
+.documentos-tela :is(.documento-arquivo, .documentos-aviso, .upload-pdf) {
+  border: 1px solid #486447;
+  background: #102d1c;
+}
+
+.documentos-tela .upload-pdf {
+  position: relative;
+  border-style: dashed;
+}
+
+.documentos-tela .upload-pdf:hover,
+.documentos-tela .upload-pdf:focus-within,
+.documentos-tela .botao-link:focus-within {
+  outline: 2px solid #ffd000;
+  outline-offset: 2px;
+}
+
+.documentos-tela .documento-seletor-pdf {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+
+.documentos-tela :is(select, input:not([type="file"])) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid #668061;
+  border-radius: 8px;
+  background: #102d1c;
+  color: #f5f4eb;
+  font-size: 16px;
+}
+
+.documentos-tela input[type="date"] {
+  display: block;
+  appearance: none;
+}
+
+.documentos-tela .botao-link {
+  position: relative;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #ffdf33;
+  background: #ffd000;
+  color: #101600;
+  text-align: center;
+}
+
+.documentos-tela .botao-link:hover {
+  background: #ffdc36;
+}
+
+.documentos-tela .botao-link.secundario {
+  border-color: #668061;
+  background: #102d1c;
+  color: #f5f4eb;
+}
+
+.documentos-tela .botao-link.perigo {
+  border-color: #a65353;
+  background: #702729;
+  color: #fff;
+}
+
+.documentos-tela .botao-link:disabled,
+.documentos-tela .botao-link[aria-disabled="true"] {
+  opacity: 0.55;
+}
+
+.documentos-tela .cnh-acao {
+  color: #ffd000;
+}

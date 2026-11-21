@@ -159,3 +159,76 @@
   padding-left: 20px;
   overflow-wrap: anywhere;
 }
+
+.prazos-garagem {
+  box-sizing: border-box;
+  padding: 16px 14px;
+}
+
+.prazos-resumo {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.prazos-resumo button {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  padding: 10px;
+  color: inherit;
+  text-align: left;
+}
+
+.prazos-resumo strong {
+  color: var(--cor-prazo, #ffd000);
+  font-size: 22px;
+}
+
+.prazos-resumo span {
+  font-size: 12px;
+}
+
+.prazos-resumo button[aria-pressed="true"] {
+  border-color: var(--cor-prazo, #ffd000);
+  background: #193822;
+}
+
+.prazos-tela .em-breve { --cor-prazo: #ffd16b; }
+.prazos-tela .vencida { --cor-prazo: #ffabab; }
+.prazos-tela .programada { --cor-prazo: #a9e1a5; }
+
+.prazos-filtros {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr));
+  align-items: end;
+}
+
+.prazos-filtros .gr-add {
+  min-height: 44px;
+}
+
+.prazos-item {
+  border-inline-start: 3px solid var(--cor-prazo);
+  overflow-wrap: anywhere;
+}
+
+.prazos-status {
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: var(--cor-prazo);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.prazos-item .prazos-detalhe {
+  color: #c3d0bc;
+  font-size: 12px;
+}
+
+.prazos-item.vencida .prazos-detalhe,
+.prazos-item.em-breve .prazos-detalhe {
+  color: var(--cor-prazo);
+}

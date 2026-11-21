@@ -7,7 +7,7 @@ const abas = [
   ["Início", "casa"],
   ["Veículos", "carro"],
   ["Abastecimentos", "bomba", "Abastec."],
-  ["Manutenções", "chave"],
+  ["Registrar manutenção", "chave"],
 ];
 
 export default function App({ nomeGaragem, controlesGaragem }) {
@@ -23,7 +23,7 @@ export default function App({ nomeGaragem, controlesGaragem }) {
   return (
     <div className="gr-app">
       {rota.destino === "Alertas" ? (
-        <Proximas filtroStatusInicial={rota.filtro} onBack={() => navegar("Início")} />
+        <Proximas key={rota.versao} filtroStatusInicial={rota.filtro} onBack={() => navegar("Início")} />
       ) : (
         <Cars
           key={rota.versao}

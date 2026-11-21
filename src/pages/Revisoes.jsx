@@ -5,6 +5,8 @@ import SeletorAnexos from "./SeletorAnexos";
 import { useEffect, useMemo, useState } from "react";
 import { useDb } from "../db/db";
 
+const TIPO_PERSONALIZADO = "Outro";
+
 const TIPOS_REVISAO = [
   "Troca de óleo",
   "Revisão",
@@ -12,7 +14,7 @@ const TIPOS_REVISAO = [
   "Freios",
   "Bateria",
   "Arrefecimento",
-  "Outro",
+  TIPO_PERSONALIZADO,
 ];
 
 // Regras padrão de sugestão (ajuste livre depois)
@@ -23,7 +25,6 @@ const REGRAS_PROXIMA = {
   "Freios": { meses: 18, km: 20000 },
   "Bateria": { meses: 24, km: null },
   "Arrefecimento": { meses: 24, km: null },
-  "Outro": { meses: null, km: null },
 };
 
 function dataHojeYYYYMMDD() {
@@ -80,6 +81,7 @@ export default function Revisoes({ carId, modo }) {
 
   // formulário novo
   const [tipo, setTipo] = useState("Troca de óleo");
+  const [nomePersonalizado, setNomePersonalizado] = useState("");
   const [data, setData] = useState(dataHojeYYYYMMDD());
   const [km, setKm] = useState("");
   const [periodica, setPeriodica] = useState(true);
@@ -94,6 +96,7 @@ export default function Revisoes({ carId, modo }) {
   // edição
   const [editId, setEditId] = useState(null);
   const [eTipo, setETipo] = useState("Troca de óleo");
+  const [eNomePersonalizado, setENomePersonalizado] = useState("");
   const [eData, setEData] = useState(dataHojeYYYYMMDD());
   const [eKm, setEKm] = useState("");
   const [ePeriodica, setEPeriodica] = useState(false);
@@ -148,7 +151,12 @@ export default function Revisoes({ carId, modo }) {
   async function adicionarRevisao(e) {
     e.preventDefault();
     if (!carIdNum) return;
-    if (!tipo) return;
+    const personalizado = tipo === TIPO_PERSONALIZADO;
+    const nome = personalizado ? nomePersonalizado.trim() : tipo;
+    if (!nome) {
+      setErroCadastro("Informe o nome da revisão.");
+      return;
+    }
     if (!data) return;
 
     const mileage = km.trim() !== "" ? Number(km) : null;
@@ -169,8 +177,9 @@ export default function Revisoes({ carId, modo }) {
     try {
       serviceId = await db.services.add({
         carId: carIdNum,
-        type: tipo,
-        planoItemId: itemDaRevisao(itens, { type: tipo })?.id ?? null,
+        type: nome,
+        tipoPersonalizado: personalizado,
+        planoItemId: itemDaRevisao(itens, { type: nome })?.id ?? null,
         date: data,
         mileage,
         periodica,
@@ -190,6 +199,7 @@ export default function Revisoes({ carId, modo }) {
     }
 
     if (serviceId) {
+      setNomePersonalizado("");
       setKm("");
       setPeriodica(true);
       setProximaData(addMesesYYYYMMDD(data, REGRAS_PROXIMA[tipo]?.meses));
@@ -216,7 +226,10 @@ export default function Revisoes({ carId, modo }) {
     setEditId(r.id);
     setErroEdicao("");
     setEPeriodica(revisaoPeriodica(r));
-    setETipo(itemDaRevisao(itens, r)?.nome || r.type || "Troca de óleo");
+    const tipoAtual = itemDaRevisao(itens, r)?.nome || r.type || "Troca de óleo";
+    const personalizado = r.tipoPersonalizado || !tipos.includes(tipoAtual);
+    setETipo(personalizado ? TIPO_PERSONALIZADO : tipoAtual);
+    setENomePersonalizado(personalizado || tipoAtual === TIPO_PERSONALIZADO ? r.type || "" : "");
     setEData(r.date || dataHojeYYYYMMDD());
     setEKm(r.mileage != null ? String(r.mileage) : "");
     setEProxData(r.nextDate || "");
@@ -236,11 +249,18 @@ export default function Revisoes({ carId, modo }) {
 
   async function salvarEdicao() {
     if (!editId || salvandoEdicao) return;
-    if (!eTipo || !eData) return;
+    if (!eData) return;
+    const personalizado = eTipo === TIPO_PERSONALIZADO;
+    const nome = personalizado ? eNomePersonalizado.trim() : eTipo;
+    if (!nome) {
+      setErroEdicao("Informe o nome da revisão.");
+      return;
+    }
 
     const payload = {
-      type: eTipo,
-      planoItemId: itemDaRevisao(itens, { type: eTipo })?.id ?? null,
+      type: nome,
+      tipoPersonalizado: personalizado,
+      planoItemId: itemDaRevisao(itens, { type: nome })?.id ?? null,
       date: eData,
       mileage: eKm.trim() !== "" ? Number(eKm) : null,
       periodica: ePeriodica,
@@ -291,7 +311,13 @@ export default function Revisoes({ carId, modo }) {
             Tipo
             <select
               value={tipo}
-              onChange={(e) => setTipo(e.target.value)}
+              onChange={e => {
+                setTipo(e.target.value);
+                if (e.target.value === TIPO_PERSONALIZADO) {
+                  setProximaData("");
+                  setProximoKm("");
+                }
+              }}
             >
               {tipos.map((t) => (
                 <option key={t} value={t}>
@@ -300,6 +326,14 @@ export default function Revisoes({ carId, modo }) {
               ))}
             </select>
           </label>
+
+          {tipo === TIPO_PERSONALIZADO && (
+            <label>
+              O que foi feito?
+              <input required value={nomePersonalizado} onChange={e => setNomePersonalizado(e.target.value)}
+                placeholder="Ex.: Módulo ABS" />
+            </label>
+          )}
 
           <div className="revisoes-par">
             <label>
@@ -422,6 +456,14 @@ export default function Revisoes({ carId, modo }) {
                           ))}
                         </select>
                       </label>
+
+                      {eTipo === TIPO_PERSONALIZADO && (
+                        <label>
+                          O que foi feito?
+                          <input value={eNomePersonalizado} onChange={e => setENomePersonalizado(e.target.value)}
+                            placeholder="Ex.: Módulo ABS" />
+                        </label>
+                      )}
 
                       <div className="revisoes-par">
                         <label>

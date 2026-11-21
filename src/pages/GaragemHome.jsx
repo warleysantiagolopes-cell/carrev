@@ -77,7 +77,7 @@ export default function GaragemHome({
   onAdicionar, onAbrirCarro, onVeiculos, onAlertas, onAtualizarKm,
 }) {
   const db = useDb();
-  const porVeiculo = ["Abastecimentos", "Manutenções", "Documentos", "Tabela FIPE"].includes(destinoInicial);
+  const porVeiculo = ["Abastecimentos", "Manutenções", "Registrar manutenção", "Documentos", "Tabela FIPE"].includes(destinoInicial);
   const [selecionar, setSelecionar] = useState(porVeiculo && carros.length > 1 ? destinoInicial : null);
   const [pagina, setPagina] = useState(() => {
     if (destinoInicial === "Relatórios") return { tipo: destinoInicial };
@@ -108,6 +108,9 @@ export default function GaragemHome({
   if (pagina) {
     return <div className="gr-feature-page"><Topo titulo={`${pagina.tipo}${pagina.carro ? ` · ${pagina.carro.name}` : ""}`} voltar={voltar}/>
       {pagina.tipo === "Abastecimentos" && pagina.carro && <AbastecimentosCarro carId={pagina.carro.id}/>}
+      {pagina.tipo === "Registrar manutenção" && pagina.carro && (
+        <Revisoes modo="cadastro" carId={pagina.carro.id} />
+      )}
       {pagina.tipo === "Manutenções" && pagina.carro && <>
         <nav className="ficha-abas" aria-label="Manutenções do veículo">
           <button type="button" aria-pressed={modoRevisao === "cadastro"} onClick={() => setModoRevisao("cadastro")}>

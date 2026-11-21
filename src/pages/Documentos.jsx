@@ -1,3 +1,5 @@
+import "./Revisoes.css";
+import "./Documentos.css";
 import { useEffect, useMemo, useState } from "react";
 import { useDb } from "../db/db";
 
@@ -484,19 +486,8 @@ export default function Documentos({ carId }) {
   ================================================== */
 
   return (
-    <section
-      style={{
-        textAlign: "left",
-      }}
-    >
-
-      <h3
-        style={{
-          margin: "0 0 12px",
-        }}
-      >
-        Documentos
-      </h3>
+    <section className="revisoes-tela documentos-tela">
+      <h2>Documentos</h2>
 
       <div className="documentos-grid">
 
@@ -504,7 +495,7 @@ export default function Documentos({ carId }) {
             CRLV
         ================================================== */}
 
-        <div className="documento-card">
+        <div className="documento-card revisoes-registro">
 
           <div className="documento-cabecalho">
 
@@ -579,10 +570,7 @@ export default function Documentos({ carId }) {
                   <input
                     type="file"
                     accept="application/pdf,.pdf"
-                    style={{
-                      display:
-                        "none",
-                    }}
+                    className="documento-seletor-pdf"
                     disabled={
                       salvando
                     }
@@ -637,10 +625,7 @@ export default function Documentos({ carId }) {
               <input
                 type="file"
                 accept="application/pdf,.pdf"
-                style={{
-                  display:
-                    "none",
-                }}
+                className="documento-seletor-pdf"
                 disabled={
                   salvando
                 }
@@ -667,60 +652,10 @@ export default function Documentos({ carId }) {
         </div>
 
         {/* ==================================================
-            CNH DO BRASIL
-        ================================================== */}
-
-        <button
-          type="button"
-          className="documento-card cnh-card"
-          onClick={
-            abrirCnhBrasil
-          }
-          title="Abrir CNH do Brasil"
-        >
-
-          <div className="documento-cabecalho">
-
-            <div
-              className="documento-icone cnh-icone"
-              aria-hidden="true"
-            >
-
-              <span>
-                CNH
-              </span>
-
-              <small>
-                BRASIL
-              </small>
-
-            </div>
-
-            <div>
-
-              <strong>
-                CNH do Brasil
-              </strong>
-
-              <div className="documento-subtitulo">
-                Consulte multas, infrações e informações oficiais do veículo.
-              </div>
-
-            </div>
-
-          </div>
-
-          <div className="cnh-acao">
-            Abrir CNH do Brasil ↗
-          </div>
-
-        </button>
-
-        {/* ==================================================
             IPVA
         ================================================== */}
 
-        <div className="documento-card">
+        <div className="documento-card revisoes-registro">
 
           <div className="documento-cabecalho">
 
@@ -798,7 +733,7 @@ export default function Documentos({ carId }) {
                 gap: 5,
                 fontSize: 11,
                 color:
-                  "#8e98a7",
+                  "#c3d0bc",
               }}
             >
 
@@ -835,7 +770,7 @@ export default function Documentos({ carId }) {
               <div
                 style={{
                   color:
-                    "#8e98a7",
+                    "#c3d0bc",
                   fontSize: 11,
                   marginBottom: 7,
                 }}
@@ -854,10 +789,10 @@ export default function Documentos({ carId }) {
                   padding:
                     "0 11px",
                   border:
-                    "1px solid #313845",
+                    "1px solid #668061",
                   borderRadius: 9,
                   background:
-                    "#0b0f15",
+                    "#102d1c",
                   color:
                     statusCor(),
                   fontWeight: 800,
@@ -891,7 +826,7 @@ export default function Documentos({ carId }) {
               <div
                 style={{
                   color:
-                    "#8e98a7",
+                    "#c3d0bc",
                   fontSize: 11,
                   marginBottom: 4,
                 }}
@@ -963,7 +898,7 @@ export default function Documentos({ carId }) {
                   "grid",
                 gap: 5,
                 color:
-                  "#9ca5b3",
+                  "#c3d0bc",
                 fontSize: 11,
               }}
             >
@@ -993,7 +928,7 @@ export default function Documentos({ carId }) {
                   "grid",
                 gap: 5,
                 color:
-                  "#9ca5b3",
+                  "#c3d0bc",
                 fontSize: 11,
               }}
             >
@@ -1023,7 +958,7 @@ export default function Documentos({ carId }) {
                     "grid",
                   gap: 5,
                   color:
-                    "#9ca5b3",
+                    "#c3d0bc",
                   fontSize: 11,
                 }}
               >
@@ -1059,13 +994,13 @@ export default function Documentos({ carId }) {
                 marginTop: 12,
                 padding: 12,
                 border:
-                  "1px solid #242c36",
+                  "1px solid #486447",
                 borderRadius: 11,
                 background:
-                  "#10151c",
+                  "#102d1c",
                 fontSize: 11,
                 color:
-                  "#929cab",
+                  "#c3d0bc",
                 lineHeight: 1.6,
               }}
             >
@@ -1143,11 +1078,6 @@ export default function Documentos({ carId }) {
                 onClick={
                   registrarPagamento
                 }
-                style={{
-                  background:
-                    "#166534",
-                  color: "#fff",
-                }}
               >
                 ✓ Registrar pagamento
               </button>
@@ -1186,7 +1116,7 @@ export default function Documentos({ carId }) {
             style={{
               marginTop: 12,
               color:
-                "#7f8999",
+                "#c3d0bc",
               fontSize: 11,
               lineHeight: 1.5,
             }}
@@ -1196,6 +1126,56 @@ export default function Documentos({ carId }) {
 
         </div>
 
+        {/* ==================================================
+            CNH DO BRASIL
+        ================================================== */}
+
+        <button
+          type="button"
+          className="documento-card revisoes-registro cnh-card"
+          onClick={
+            abrirCnhBrasil
+          }
+          title="Abrir CNH do Brasil"
+        >
+
+          <div className="documento-cabecalho">
+
+            <div
+              className="documento-icone cnh-icone"
+              aria-hidden="true"
+            >
+
+              <span>
+                CNH
+              </span>
+
+              <small>
+                BRASIL
+              </small>
+
+            </div>
+
+            <div>
+
+              <strong>
+                CNH do Brasil
+              </strong>
+
+              <div className="documento-subtitulo">
+                Consulte multas, infrações e informações oficiais do veículo.
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="cnh-acao">
+            Abrir CNH do Brasil ↗
+          </div>
+
+        </button>
+
       </div>
 
       {/* ==================================================
@@ -1204,7 +1184,7 @@ export default function Documentos({ carId }) {
 
       <p className="documentos-aviso">
 
-        O PDF fica armazenado nos dados locais do CarRev neste dispositivo.
+        O PDF do CRLV fica disponível nos documentos do veículo na sua garagem.
 
         {" "}
 
