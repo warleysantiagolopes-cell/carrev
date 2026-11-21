@@ -120,12 +120,11 @@ export default function GaragemHome({
     </div>;
   }
   const atalhos = [
-    {nome:"Abastecimentos",icone:"bomba",cor:"red",sub:contador(dados.abastecimentos.length),acao:() => escolher("Abastecimentos")},
     {nome:"Manutenções",icone:"chave",sub:contador(dados.services.length),acao:() => escolher("Manutenções")},
     {nome:"Documentos",icone:"documento",cor:"white",sub:"CRLV e IPVA",acao:() => escolher("Documentos")},
-    {nome:"Alertas",icone:"sino",cor:pendentes > 0 ? "gr-alertas-pendentes" : undefined,sub:`${pendentes} pendente${pendentes === 1 ? "" : "s"}`,acao:() => onAlertas("TODAS")},
-    {nome:"Relatórios",icone:"grafico",sub:"Resumo e PDF",acao:() => { setCarregando(true); setPagina({tipo:"Relatórios"}); }},
     {nome:"Tabela FIPE",icone:"moedas",sub:"Consultar valores",acao:() => escolher("Tabela FIPE")},
+    {nome:"Alertas",icone:"sino",cor:pendentes > 0 ? "gr-alertas-pendentes" : undefined,sub:`${pendentes} pendente${pendentes === 1 ? "" : "s"}`,acao:() => onAlertas("TODAS")},
+    {nome:"Abastecimentos",icone:"bomba",cor:"red",sub:contador(dados.abastecimentos.length),acao:() => escolher("Abastecimentos")},
   ];
   return <div className="gr-home">
     <header className="gr-topbar"><button type="button" aria-label="Mais opções" aria-expanded={menuAberto} aria-controls={menuAberto ? "gr-menu" : undefined} onClick={onMenu}><Icone nome="menu"/></button><div className="gr-wordmark" aria-label="CarRev">Car<span>Rev</span></div><button type="button" aria-label={`Alertas: ${pendentes} pendentes`} onClick={() => onAlertas("TODAS")} className="gr-bell"><Icone nome="sino"/>{pendentes > 0 && <span className="gr-notification-dot"/>}</button></header>

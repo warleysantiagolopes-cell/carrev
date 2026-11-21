@@ -1,0 +1,100 @@
+.revisoes-tela {
+  max-width: 640px;
+  margin: 0 auto;
+  color: #f5f4eb;
+}
+
+.revisoes-tela h2 {
+  font-size: clamp(23px, 4vw, 30px);
+  margin: 14px 0 12px;
+}
+
+.revisoes-formulario,
+.revisoes-registro {
+  min-width: 0;
+  padding: clamp(12px, 3vw, 18px);
+  border: 1px solid #547154;
+  border-radius: 14px;
+  background: #0d2918;
+}
+
+.revisoes-formulario {
+  display: grid;
+  gap: 12px;
+}
+
+.revisoes-formulario label {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 5px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.revisoes-formulario :is(input:not([hidden]), select, textarea) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid #668061;
+  border-radius: 8px;
+  background: #102d1c;
+  color: inherit;
+  font-size: 16px;
+}
+
+.revisoes-formulario input[type="date"] {
+  display: block;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.revisoes-formulario textarea {
+  min-height: 65px;
+  resize: vertical;
+}
+
+.revisoes-par,
+.revisoes-resumo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.revisoes-prazo,
+.revisoes-anexos {
+  padding-top: 12px;
+  border-top: 1px solid #486447;
+}
+
+.revisoes-formulario .gr-attachment-picker {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.revisoes-formulario .gr-attachment-picker legend {
+  padding: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.revisoes-tela .gr-attachment-actions button {
+  flex: 1 1 128px;
+  color: #f5f4eb;
+  border: 1px solid #668061;
+  background: #102d1c;
+}
+
+.revisoes-historico-titulo { margin: 22px 0 10px; }
+.revisoes-historico { display: grid; gap: 10px; list-style: none; padding: 0; }
+.revisoes-registro-topo { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+.revisoes-registro-topo p,
+.revisoes-resumo dt { margin: 4px 0 0; color: #c3d0bc; font-size: 13px; }
+.revisoes-resumo dd { margin: 4px 0 0; font-size: 14px; }
+.revisoes-acoes { display: flex; align-items: center; gap: 6px; }
+.revisoes-acoes button { min-height: 44px; padding: 6px 9px; color: #ffd000; background: transparent; border: 1px solid #486447; }
+.revisoes-edicao { border: 0; padding: 0; }
+.revisoes-observacao { overflow-wrap: anywhere; white-space: pre-wrap; }

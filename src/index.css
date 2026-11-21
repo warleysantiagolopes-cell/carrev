@@ -2565,8 +2565,10 @@ body, #root { background:#020f08; }
 .gr-add svg { width:26px; height:26px; stroke-width:2; }
 .gr-add:hover { background:#ffdc36; border-color:#ffec87; }
 .gr-add:disabled { opacity:.5; cursor:default; }
-.gr-shortcuts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px; margin-top:18px; }
+.gr-shortcuts { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:11px; margin-top:18px; }
 .gr-shortcut { display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:117px; gap:7px; padding:15px 4px 12px; background:linear-gradient(130deg,#062710,#001508); border:1px solid #516345; border-radius:12px; box-shadow:inset 0 1px 1px #adbf9e0d; }
+.gr-shortcut { grid-column: span 2; }
+.gr-shortcut:nth-child(n+4) { grid-column: span 3; }
 .gr-shortcut:hover { border-color:#e0bf29; background:#12391e; }
 .gr-shortcut svg { width:30px; height:30px; color:#ffd000; margin-bottom:1px; }
 .gr-shortcut.red svg { color:#f21f37; }

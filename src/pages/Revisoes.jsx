@@ -1,3 +1,4 @@
+import "./Revisoes.css";
 import BotaoVoltar from "./BotaoVoltar";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDb } from "../db/db";
@@ -262,22 +263,16 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
   }
 
   return (
-    <div style={{ padding: 16 }}>
+    <div className="revisoes-tela">
       <BotaoVoltar onClick={onBack} />
-      <h2 style={{ marginTop: 12 }}>{titulo} — {carro.name}</h2>
+      <h2>{titulo === "Registrar revisão" ? titulo : `${titulo} — ${carro.name}`}</h2>
 
-      <form
-        onSubmit={adicionarRevisao}
-        style={{ marginTop: 12, display: "grid", gap: 8, maxWidth: 560 }}
-      >
-        <h3>Adicionar revisão</h3>
-
+      <form className="revisoes-formulario" onSubmit={adicionarRevisao}>
         <label>
           Tipo
           <select
             value={tipo}
             onChange={(e) => setTipo(e.target.value)}
-            style={{ display: "block", width: "100%" }}
           >
             {TIPOS_REVISAO.map((t) => (
               <option key={t} value={t}>
@@ -287,36 +282,35 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
           </select>
         </label>
 
-        <label>
-          Data
-          <input
-            type="date"
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-            style={{ display: "block", width: "100%" }}
-          />
-        </label>
+        <div className="revisoes-par">
+          <label>
+            Data
+            <input
+              type="date"
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+            />
+          </label>
 
-        <label>
-          Quilometragem (km)
-          <input
-            type="number"
-            inputMode="numeric"
-            value={km}
-            onChange={(e) => setKm(e.target.value)}
-            placeholder="ex.: 82500"
-            style={{ display: "block", width: "100%" }}
-          />
-        </label>
+          <label>
+            Quilometragem (km)
+            <input
+              type="number"
+              inputMode="numeric"
+              value={km}
+              onChange={(e) => setKm(e.target.value)}
+              placeholder="ex.: 82500"
+            />
+          </label>
+        </div>
 
-        <div style={{ display: "grid", gap: 8, gridTemplateColumns: "1fr 1fr" }}>
+        <div className="revisoes-par revisoes-prazo">
           <label>
             Próxima data
             <input
               type="date"
               value={proximaData}
               onChange={(e) => setProximaData(e.target.value)}
-              style={{ display: "block", width: "100%" }}
             />
           </label>
 
@@ -328,18 +322,16 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
               value={proximoKm}
               onChange={(e) => setProximoKm(e.target.value)}
               placeholder="ex.: 90000"
-              style={{ display: "block", width: "100%" }}
             />
           </label>
         </div>
 
         <label>
           Observações
-          <input
+          <textarea
             value={observacoes}
             onChange={(e) => setObservacoes(e.target.value)}
             placeholder="Opcional"
-            style={{ display: "block", width: "100%" }}
           />
         </label>
 
@@ -356,46 +348,42 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
           </ul>}
         </fieldset>
 
-        <button type="submit" disabled={salvando}>{salvando ? "Salvando…" : "Adicionar"}</button>
+        <button type="submit" className="gr-add" disabled={salvando}>{salvando ? "Salvando…" : "Adicionar"}</button>
         {erroCadastro && <p role="alert">{erroCadastro}</p>}
       </form>
 
-      <h3 style={{ marginTop: 20 }}>Histórico</h3>
+      <h3 className="revisoes-historico-titulo">Histórico</h3>
 
       {revisoes.length === 0 ? (
         <p>Nenhuma revisão cadastrada ainda.</p>
       ) : (
-        <ul style={{ paddingLeft: 18 }}>
+        <ul className="revisoes-historico">
           {revisoes.map((r) => {
             const emEdicao = editId === r.id;
 
             return (
-              <li key={r.id} style={{ marginBottom: 16 }}>
+              <li className="revisoes-registro" key={r.id}>
                 {!emEdicao ? (
                   <>
-                    <div>
-                      <strong>{r.type}</strong> — {r.date}
-                      {r.mileage != null ? ` — ${r.mileage} km` : ""}
+                    <div className="revisoes-registro-topo">
+                      <div>
+                        <strong>{r.type}</strong>
+                        <p>{[formatarDataRevisao(r.date), r.mileage != null ? `${Number(r.mileage).toLocaleString("pt-BR")} km` : null].filter(Boolean).join(" · ")}</p>
+                      </div>
+                      <div className="revisoes-acoes">
+                        <button type="button" onClick={() => iniciarEdicao(r)}>Editar</button>
+                        <button type="button" onClick={() => excluirRevisao(r.id)}>Excluir</button>
+                      </div>
                     </div>
-
-                    <div style={{ fontSize: 14 }}>
-                      {r.nextDate ? `Próxima data: ${r.nextDate} ` : "Próxima data: — "}
-                      {" | "}
-                      {r.nextMileage != null ? `Próxima quilometragem: ${r.nextMileage} km` : "Próxima quilometragem: —"}
-                      {r.notes ? ` — Obs.: ${r.notes}` : ""}
-                    </div>
-
+                    <dl className="revisoes-resumo">
+                      <div><dt>Próxima data</dt><dd>{formatarDataRevisao(r.nextDate) || "—"}</dd></div>
+                      <div><dt>Próxima quilometragem</dt><dd>{r.nextMileage != null ? `${Number(r.nextMileage).toLocaleString("pt-BR")} km` : "—"}</dd></div>
+                    </dl>
+                    {r.notes && <p className="revisoes-observacao"><strong>Observações</strong> {r.notes}</p>}
                     <FotosDaEntidade ownerType="service" ownerId={r.id} />
-
-                    <button onClick={() => iniciarEdicao(r)} style={{ marginTop: 6, marginRight: 8 }}>
-                      Editar
-                    </button>
-                    <button onClick={() => excluirRevisao(r.id)} style={{ marginTop: 6 }}>
-                      Excluir
-                    </button>
                   </>
                 ) : (
-                  <div style={{ display: "grid", gap: 8, maxWidth: 560 }}>
+                  <div className="revisoes-formulario revisoes-edicao">
                     <strong>Editando revisão</strong>
 
                     <label>
@@ -403,7 +391,6 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
                       <select
                         value={eTipo}
                         onChange={(e) => setETipo(e.target.value)}
-                        style={{ display: "block", width: "100%" }}
                       >
                         {TIPOS_REVISAO.map((t) => (
                           <option key={t} value={t}>
@@ -413,35 +400,34 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
                       </select>
                     </label>
 
-                    <label>
-                      Data
-                      <input
-                        type="date"
-                        value={eData}
-                        onChange={(e) => setEData(e.target.value)}
-                        style={{ display: "block", width: "100%" }}
-                      />
-                    </label>
+                    <div className="revisoes-par">
+                      <label>
+                        Data
+                        <input
+                          type="date"
+                          value={eData}
+                          onChange={(e) => setEData(e.target.value)}
+                        />
+                      </label>
 
-                    <label>
-                      Quilometragem (km)
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        value={eKm}
-                        onChange={(e) => setEKm(e.target.value)}
-                        style={{ display: "block", width: "100%" }}
-                      />
-                    </label>
+                      <label>
+                        Quilometragem (km)
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          value={eKm}
+                          onChange={(e) => setEKm(e.target.value)}
+                        />
+                      </label>
+                    </div>
 
-                    <div style={{ display: "grid", gap: 8, gridTemplateColumns: "1fr 1fr" }}>
+                    <div className="revisoes-par revisoes-prazo">
                       <label>
                         Próxima data
                         <input
                           type="date"
                           value={eProxData}
                           onChange={(e) => setEProxData(e.target.value)}
-                          style={{ display: "block", width: "100%" }}
                         />
                       </label>
 
@@ -452,22 +438,20 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
                           inputMode="numeric"
                           value={eProxKm}
                           onChange={(e) => setEProxKm(e.target.value)}
-                          style={{ display: "block", width: "100%" }}
                         />
                       </label>
                     </div>
 
                     <label>
                       Observações
-                      <input
+                      <textarea
                         value={eObs}
                         onChange={(e) => setEObs(e.target.value)}
-                        style={{ display: "block", width: "100%" }}
                       />
                     </label>
 
-                    <div>
-                      <button onClick={salvarEdicao} style={{ marginRight: 8 }}>
+                    <div className="revisoes-acoes">
+                      <button type="button" onClick={salvarEdicao}>
                         Salvar
                       </button>
                       <button onClick={cancelarEdicao}>Cancelar</button>
@@ -481,6 +465,10 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
       )}
     </div>
   );
+}
+
+function formatarDataRevisao(valor) {
+  return String(valor ?? "").replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$3/$2/$1");
 }
 
 function FotosDaEntidade({ ownerType, ownerId }) {
@@ -522,7 +510,7 @@ function FotosDaEntidade({ ownerType, ownerId }) {
   }
 
   return (
-    <div style={{ marginTop: 10 }}>
+    <div className="revisoes-anexos">
       <strong>Anexos</strong>
       <SeletorAnexos onSelecionar={adicionarMais} desabilitado={enviando} />
       {enviando && <p role="status">Enviando anexos…</p>}
