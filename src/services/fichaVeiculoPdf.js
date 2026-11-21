@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import { PDFDocument } from "pdf-lib";
 import { tiposLampadas } from "../pages/LampadasVeiculo";
 import { calcularConsumo } from "./consumo";
+import { calcularPlano, reunirPrazos } from "./planoRevisao";
 import { calcularVencimento } from "./vencimentoRevisao";
 
 const formatoMoeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -186,8 +187,21 @@ export async function gerarFichaVeiculo(db, id) {
     listarAnexos(revisao, titulo);
   }
 
+  const plano = calcularPlano(carro, revisoes);
+  if (plano.length) {
+    secao("Plano de revisão");
+    for (const servico of plano) {
+      item(servico.nome);
+      campos([
+        ["Intervalo em meses", servico.meses], ["Intervalo em quilômetros", km(servico.km)],
+        ["Data de referência cadastrada", data(servico.dataBase)], ["Quilometragem de referência cadastrada", km(servico.kmBase)],
+        ["Próxima data", data(servico.nextDate)], ["Próxima quilometragem", km(servico.nextMileage)],
+      ]);
+    }
+  }
+
   secao("Próximas revisões");
-  const proximas = revisoes.filter(revisao => revisao.nextDate || revisao.nextMileage != null);
+  const proximas = reunirPrazos(carro, revisoes);
   if (!proximas.length) escrever("Nenhuma próxima revisão programada.");
   for (const revisao of proximas) {
     const prazo = calcularVencimento(revisao, typeof carro.currentMileage === "number" ? carro.currentMileage : null);

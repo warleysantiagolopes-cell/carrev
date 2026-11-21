@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDb } from "../db/db";
 import { Icone } from "./GaragemHome";
 import AbastecimentosCarro from "./AbastecimentosCarro";
+import PlanoRevisao from "./PlanoRevisao";
 import Proximas from "./Proximas";
 import Revisoes from "./Revisoes";
 import Acabamentos from "./Acabamentos";
@@ -15,6 +16,7 @@ import "./CarroDetalhe.css";
 const abas = [
   { id: "geral", titulo: "Visão geral", icone: "carro" },
   { id: "revisoes", titulo: "Registrar revisão", icone: "chave" },
+  { id: "plano", titulo: "Plano de revisão", icone: "calendario" },
   { id: "proximas", titulo: "Próximas revisões", icone: "sino" },
   { id: "documentos", titulo: "Documentos", icone: "documento" },
   { id: "acabamentos", titulo: "Registrar item estético", icone: "brilho" },
@@ -240,6 +242,7 @@ export default function CarroDetalhe({ carId, onBack }) {
             </>
           )}
 
+          {aba === "plano" && <PlanoRevisao key={carro.id} carro={carro} />}
           {aba === "proximas" && <Proximas carId={carId} />}
           {aba === "revisoes" && <Revisoes titulo="Registrar revisão" carId={carId} />}
           {aba === "acabamentos" && <Acabamentos titulo="Registrar item estético" carId={carId} carName={carro.name} />}

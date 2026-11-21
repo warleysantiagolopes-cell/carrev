@@ -9,6 +9,8 @@ import CarroDetalhe from "./CarroDetalhe";
 import LampadasVeiculo, { limparLampadas } from "./LampadasVeiculo";
 import AbastecimentosCarro from "./AbastecimentosCarro";
 import AlertasHome from "./AlertasHome";
+import { reunirPrazos } from "../services/planoRevisao";
+import { calcularVencimento } from "../services/vencimentoRevisao";
 
 import {
   listarMarcasFipe,
@@ -33,78 +35,6 @@ const COMBUSTIVEIS = [
 /* ==================================================
    HELPERS
 ================================================== */
-
-function diasAte(dataYYYYMMDD) {
-  const [y, m, d] = String(dataYYYYMMDD)
-    .split("-")
-    .map(Number);
-
-  const alvo = new Date(
-    y,
-    m - 1,
-    d,
-    0,
-    0,
-    0,
-    0
-  );
-
-  const hoje = new Date();
-
-  const base = new Date(
-    hoje.getFullYear(),
-    hoje.getMonth(),
-    hoje.getDate(),
-    0,
-    0,
-    0,
-    0
-  );
-
-  const diffMs =
-    alvo.getTime() -
-    base.getTime();
-
-  return Math.round(
-    diffMs /
-      (1000 * 60 * 60 * 24)
-  );
-}
-
-function statusPorData(dias) {
-  if (dias < 0) return "VENCIDA";
-  if (dias <= 14) {
-    return "EM BREVE";
-  }
-
-  return "OK";
-}
-
-function statusPorKm(
-  kmRestante
-) {
-  if (kmRestante < 0) {
-    return "VENCIDA";
-  }
-
-  if (kmRestante <= 500) {
-    return "EM BREVE";
-  }
-
-  return "OK";
-}
-
-function piorStatus(a, b) {
-  const rank = {
-    VENCIDA: 3,
-    "EM BREVE": 2,
-    OK: 1,
-  };
-
-  return rank[a] >= rank[b]
-    ? a
-    : b;
-}
 
 function dinheiroParaNumero(
   valor
@@ -160,101 +90,18 @@ function dinheiroParaNumero(
    BADGE DE REVISÕES
 ================================================== */
 
-async function calcularBadgeDoCarro(db,
-  carId,
-  kmAtual
-) {
-  if (!db.services) {
-    return {
-      total: 0,
-      vencidas: 0,
-      emBreve: 0,
-      ok: 0,
-      status: "OK",
-    };
-  }
-
-  const revisoes =
-    await db.services
-      .where("carId")
-      .equals(
-        Number(carId)
-      )
-      .toArray();
-
-  const futuras =
-    revisoes.filter(
-      (r) =>
-        r.nextDate ||
-        r.nextMileage != null
-    );
-
-  let vencidas = 0;
-  let emBreve = 0;
-  let ok = 0;
-
-  let statusFinal = "OK";
-
-  for (const r of futuras) {
-    const dias =
-      r.nextDate
-        ? diasAte(r.nextDate)
-        : null;
-
-    const kmRestante =
-      r.nextMileage != null &&
-      typeof kmAtual ===
-        "number"
-        ? r.nextMileage -
-          kmAtual
-        : null;
-
-    let st = "OK";
-
-    if (dias != null) {
-      st = piorStatus(
-        st,
-        statusPorData(dias)
-      );
-    }
-
-    if (
-      kmRestante != null
-    ) {
-      st = piorStatus(
-        st,
-        statusPorKm(
-          kmRestante
-        )
-      );
-    }
-
-    if (
-      st === "VENCIDA"
-    ) {
-      vencidas++;
-    } else if (
-      st === "EM BREVE"
-    ) {
-      emBreve++;
-    } else {
-      ok++;
-    }
-
-    statusFinal =
-      piorStatus(
-        statusFinal,
-        st
-      );
-  }
-
+async function calcularBadgeDoCarro(db, carro) {
+  const revisoes = await db.services.where("carId").equals(Number(carro.id)).toArray();
+  const futuras = reunirPrazos(carro, revisoes);
+  const totais = { VENCIDA: 0, "EM BREVE": 0, OK: 0 };
+  const km = typeof carro.currentMileage === "number" ? carro.currentMileage : null;
+  for (const revisao of futuras) totais[calcularVencimento(revisao, km).status]++;
   return {
     total: futuras.length,
-    vencidas,
-    emBreve,
-    ok,
-    status:
-      statusFinal,
+    vencidas: totais.VENCIDA,
+    emBreve: totais["EM BREVE"],
+    ok: totais.OK,
+    status: totais.VENCIDA ? "VENCIDA" : totais["EM BREVE"] ? "EM BREVE" : "OK",
   };
 }
 
@@ -546,17 +393,8 @@ export default function Cars({
     for (
       const carro of todos
     ) {
-      const kmAtual =
-        typeof carro.currentMileage ===
-        "number"
-          ? carro.currentMileage
-          : null;
-
       const badge =
-        await calcularBadgeDoCarro(db,
-          carro.id,
-          kmAtual
-        );
+        await calcularBadgeDoCarro(db, carro);
 
       emDia += badge.ok;
 
@@ -2733,17 +2571,8 @@ function CarCard({
 
   useEffect(() => {
     async function carregarBadge() {
-      const kmAtual =
-        typeof carro.currentMileage ===
-        "number"
-          ? carro.currentMileage
-          : null;
-
       const resultado =
-        await calcularBadgeDoCarro(db,
-          carro.id,
-          kmAtual
-        );
+        await calcularBadgeDoCarro(db, carro);
 
       setBadge(resultado);
     }
@@ -2752,6 +2581,7 @@ function CarCard({
   }, [
     carro.id,
     carro.currentMileage,
+    carro.planoRevisao,
   ]);
 
   const kmTxt =

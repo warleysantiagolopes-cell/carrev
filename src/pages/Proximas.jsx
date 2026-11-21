@@ -4,7 +4,7 @@ import BotaoVoltar from "./BotaoVoltar";
 import { useEffect, useMemo, useState } from "react";
 import { useDb } from "../db/db";
 
-import { calcularVencimento } from "../services/vencimentoRevisao";
+import { prazosDaGaragem } from "../services/planoRevisao";
 
 function formatarData(data) {
   if (!data) return "—";
@@ -79,39 +79,7 @@ export default function Proximas({
       const carrosDb =
         await db.cars.toArray();
 
-      const carrosMap = {};
-
-      carrosDb.forEach((c) => {
-        carrosMap[c.id] = c;
-      });
-
-      const lista = revisoes
-        .filter(
-          (r) =>
-            r.nextDate ||
-            r.nextMileage != null
-        )
-        .map((r) => {
-          const carro =
-            carrosMap[r.carId];
-
-          const carroNome =
-            carro?.name || "Carro";
-
-          const kmAtual =
-            typeof carro?.currentMileage === "number"
-              ? carro.currentMileage
-              : null;
-
-          const vencimento = calcularVencimento(r, kmAtual);
-
-          return {
-            ...r,
-            carroNome,
-            kmAtual,
-            ...vencimento,
-          };
-        });
+      const lista = prazosDaGaragem(carrosDb, revisoes);
 
       const rank = {
         VENCIDA: 0,

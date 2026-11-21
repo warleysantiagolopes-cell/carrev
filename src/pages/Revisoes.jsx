@@ -1,4 +1,5 @@
 import "./Revisoes.css";
+import { itemDaRevisao, itensDoPlano } from "../services/planoRevisao";
 import BotaoVoltar from "./BotaoVoltar";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDb } from "../db/db";
@@ -177,6 +178,7 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
       serviceId = await db.services.add({
         carId: carIdNum,
         type: tipo,
+        planoItemId: itemDaRevisao(itens, { type: tipo })?.id ?? null,
         date: data,
         mileage,
         nextDate: proximaData || null,
@@ -212,9 +214,12 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
     await carregar();
   }
 
+  const itens = itensDoPlano(carro);
+  const tipos = [...new Set([...TIPOS_REVISAO, ...itens.map(item => item.nome)])];
+
   function iniciarEdicao(r) {
     setEditId(r.id);
-    setETipo(r.type || "Troca de óleo");
+    setETipo(itemDaRevisao(itens, r)?.nome || r.type || "Troca de óleo");
     setEData(r.date || dataHojeYYYYMMDD());
     setEKm(r.mileage != null ? String(r.mileage) : "");
     setEProxData(r.nextDate || "");
@@ -238,6 +243,7 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
 
     const payload = {
       type: eTipo,
+      planoItemId: itemDaRevisao(itens, { type: eTipo })?.id ?? null,
       date: eData,
       mileage: eKm.trim() !== "" ? Number(eKm) : null,
       nextDate: eProxData || null,
@@ -274,7 +280,7 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
             value={tipo}
             onChange={(e) => setTipo(e.target.value)}
           >
-            {TIPOS_REVISAO.map((t) => (
+            {tipos.map((t) => (
               <option key={t} value={t}>
                 {t}
               </option>
@@ -392,7 +398,7 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
                         value={eTipo}
                         onChange={(e) => setETipo(e.target.value)}
                       >
-                        {TIPOS_REVISAO.map((t) => (
+                        {[...new Set([...tipos, eTipo])].map((t) => (
                           <option key={t} value={t}>
                             {t}
                           </option>
