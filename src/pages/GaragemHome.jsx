@@ -84,6 +84,7 @@ export default function GaragemHome({
     if (porVeiculo && carros.length <= 1) return { tipo: destinoInicial, carro: carros[0] };
     return null;
   });
+  const [modoRevisao, setModoRevisao] = useState("cadastro");
   const [dados, setDados] = useState({ abastecimentos: [], services: [] });
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
@@ -102,12 +103,22 @@ export default function GaragemHome({
   }
   const pendentes = resumo.emBreve + resumo.vencidas;
   const contador = n => carregando ? "Carregando…" : erro ? "Ver registros" : `${n} registro${n === 1 ? "" : "s"}`;
-  const voltar = () => { setPagina(null); onVoltarInicio(); };
+  const voltar = () => { setPagina(null); setModoRevisao("cadastro"); onVoltarInicio(); };
   const fecharSeletor = () => { setSelecionar(null); onVoltarInicio(); };
   if (pagina) {
     return <div className="gr-feature-page"><Topo titulo={`${pagina.tipo}${pagina.carro ? ` · ${pagina.carro.name}` : ""}`} voltar={voltar}/>
       {pagina.tipo === "Abastecimentos" && pagina.carro && <AbastecimentosCarro carId={pagina.carro.id}/>}
-      {pagina.tipo === "Manutenções" && pagina.carro && <Revisoes carId={pagina.carro.id}/>}
+      {pagina.tipo === "Manutenções" && pagina.carro && <>
+        <nav className="ficha-abas" aria-label="Manutenções do veículo">
+          <button type="button" aria-pressed={modoRevisao === "cadastro"} onClick={() => setModoRevisao("cadastro")}>
+            Registrar revisão
+          </button>
+          <button type="button" aria-pressed={modoRevisao === "historico"} onClick={() => setModoRevisao("historico")}>
+            Histórico de revisões
+          </button>
+        </nav>
+        <Revisoes key={modoRevisao} modo={modoRevisao} carId={pagina.carro.id} />
+      </>}
       {pagina.tipo === "Documentos" && pagina.carro && <Documentos carId={pagina.carro.id}/>}
       {pagina.tipo === "Tabela FIPE" && pagina.carro && <FipeVeiculo key={pagina.carro.id} carro={pagina.carro}/>}
       {!pagina.carro && pagina.tipo !== "Relatórios" && <section className="gr-info-panel">

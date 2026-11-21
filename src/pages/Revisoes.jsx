@@ -1,7 +1,8 @@
 import "./Revisoes.css";
-import { itemDaRevisao, itensDoPlano } from "../services/planoRevisao";
-import BotaoVoltar from "./BotaoVoltar";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { itemDaRevisao, itensDoPlano, revisaoPeriodica } from "../services/planoRevisao";
+import Anexo from "./Anexo";
+import SeletorAnexos from "./SeletorAnexos";
+import { useEffect, useMemo, useState } from "react";
 import { useDb } from "../db/db";
 
 const TIPOS_REVISAO = [
@@ -72,27 +73,7 @@ async function adicionarAnexos(db, ownerType, ownerId, files) {
   );
 }
 
-function SeletorAnexos({ onSelecionar, desabilitado }) {
-  const arquivos = useRef(null);
-  const camera = useRef(null);
-
-  function selecionar(evento) {
-    const selecionados = Array.from(evento.currentTarget.files);
-    evento.currentTarget.value = "";
-    if (selecionados.length) onSelecionar(selecionados);
-  }
-
-  return (
-    <div className="gr-attachment-actions">
-      <input ref={arquivos} type="file" multiple hidden onChange={selecionar} />
-      <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={selecionar} />
-      <button type="button" disabled={desabilitado} onClick={() => arquivos.current.click()}>Escolher arquivos</button>
-      <button type="button" disabled={desabilitado} onClick={() => camera.current.click()}>Tirar foto</button>
-    </div>
-  );
-}
-
-export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
+export default function Revisoes({ carId, modo }) {
   const db = useDb();
   const [carro, setCarro] = useState(null);
   const [revisoes, setRevisoes] = useState([]);
@@ -101,11 +82,13 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
   const [tipo, setTipo] = useState("Troca de óleo");
   const [data, setData] = useState(dataHojeYYYYMMDD());
   const [km, setKm] = useState("");
+  const [periodica, setPeriodica] = useState(true);
   const [proximaData, setProximaData] = useState("");
   const [proximoKm, setProximoKm] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [anexosNovos, setAnexosNovos] = useState([]);
   const [salvando, setSalvando] = useState(false);
+  const [avisoCadastro, setAvisoCadastro] = useState("");
   const [erroCadastro, setErroCadastro] = useState("");
 
   // edição
@@ -113,6 +96,9 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
   const [eTipo, setETipo] = useState("Troca de óleo");
   const [eData, setEData] = useState(dataHojeYYYYMMDD());
   const [eKm, setEKm] = useState("");
+  const [ePeriodica, setEPeriodica] = useState(false);
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+  const [erroEdicao, setErroEdicao] = useState("");
   const [eProxData, setEProxData] = useState("");
   const [eProxKm, setEProxKm] = useState("");
   const [eObs, setEObs] = useState("");
@@ -123,6 +109,7 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
     const c = await db.cars.get(carIdNum);
     setCarro(c || null);
 
+    if (modo !== "historico") return;
     const list = await db.services.where("carId").equals(carIdNum).toArray();
     list.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
     setRevisoes(list);
@@ -131,7 +118,7 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
   useEffect(() => {
     carregar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [carIdNum]);
+  }, [carIdNum, db, modo]);
 
   // ===== Sugestão automática (novo) =====
   function sugerirProximosCampos({ tipoLocal, dataLocal, kmLocal }) {
@@ -153,10 +140,10 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
   }
 
   useEffect(() => {
-    // Só sugere se o usuário ainda não preencheu
+    if (!periodica || modo === "historico") return;
     sugerirProximosCampos({ tipoLocal: tipo, dataLocal: data, kmLocal: km });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipo, data, km]);
+  }, [tipo, data, km, periodica, modo]);
 
   async function adicionarRevisao(e) {
     e.preventDefault();
@@ -165,14 +152,19 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
     if (!data) return;
 
     const mileage = km.trim() !== "" ? Number(km) : null;
-    const nextMileage = proximoKm.trim() !== "" ? Number(proximoKm) : null;
+    const nextMileage = periodica && proximoKm.trim() !== "" ? Number(proximoKm) : null;
 
     if (mileage != null && (!Number.isFinite(mileage) || mileage < 0)) return;
     if (nextMileage != null && (!Number.isFinite(nextMileage) || nextMileage < 0)) return;
 
     if (salvando) return;
-    setSalvando(true);
+    setAvisoCadastro("");
     setErroCadastro("");
+    if (periodica && !proximaData && nextMileage == null) {
+      setErroCadastro("Informe a próxima data ou quilometragem da revisão periódica.");
+      return;
+    }
+    setSalvando(true);
     let serviceId;
     try {
       serviceId = await db.services.add({
@@ -181,12 +173,14 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
         planoItemId: itemDaRevisao(itens, { type: tipo })?.id ?? null,
         date: data,
         mileage,
-        nextDate: proximaData || null,
+        periodica,
+        nextDate: periodica ? proximaData || null : null,
         nextMileage,
         notes: observacoes.trim() || "",
         createdAt: new Date().toISOString(),
       });
       await adicionarAnexos(db, "service", serviceId, anexosNovos);
+      setAvisoCadastro("Revisão registrada.");
     } catch {
       setErroCadastro(serviceId
         ? "Revisão salva. Os anexos falharam e podem ser enviados pelo Histórico."
@@ -197,7 +191,8 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
 
     if (serviceId) {
       setKm("");
-      setProximaData("");
+      setPeriodica(true);
+      setProximaData(addMesesYYYYMMDD(data, REGRAS_PROXIMA[tipo]?.meses));
       setProximoKm("");
       setObservacoes("");
       setAnexosNovos([]);
@@ -219,6 +214,8 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
 
   function iniciarEdicao(r) {
     setEditId(r.id);
+    setErroEdicao("");
+    setEPeriodica(revisaoPeriodica(r));
     setETipo(itemDaRevisao(itens, r)?.nome || r.type || "Troca de óleo");
     setEData(r.date || dataHojeYYYYMMDD());
     setEKm(r.mileage != null ? String(r.mileage) : "");
@@ -238,7 +235,7 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
   }
 
   async function salvarEdicao() {
-    if (!editId) return;
+    if (!editId || salvandoEdicao) return;
     if (!eTipo || !eData) return;
 
     const payload = {
@@ -246,23 +243,40 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
       planoItemId: itemDaRevisao(itens, { type: eTipo })?.id ?? null,
       date: eData,
       mileage: eKm.trim() !== "" ? Number(eKm) : null,
-      nextDate: eProxData || null,
-      nextMileage: eProxKm.trim() !== "" ? Number(eProxKm) : null,
+      periodica: ePeriodica,
+      nextDate: ePeriodica ? eProxData || null : null,
+      nextMileage: ePeriodica && eProxKm.trim() !== "" ? Number(eProxKm) : null,
       notes: eObs.trim() || "",
     };
 
     if (payload.mileage != null && (!Number.isFinite(payload.mileage) || payload.mileage < 0)) return;
     if (payload.nextMileage != null && (!Number.isFinite(payload.nextMileage) || payload.nextMileage < 0)) return;
 
-    await db.services.update(editId, payload);
-    cancelarEdicao();
-    await carregar();
+    if (ePeriodica && !payload.nextDate && payload.nextMileage == null) {
+      setErroEdicao("Informe a próxima data ou quilometragem da revisão periódica.");
+      return;
+    }
+
+    setErroEdicao("");
+    setSalvandoEdicao(true);
+    try {
+      const atualizado = await db.services.update(editId, payload);
+      if (!atualizado) {
+        setErroEdicao("Esta revisão não está mais disponível.");
+        return;
+      }
+      await carregar();
+      cancelarEdicao();
+    } catch {
+      setErroEdicao("Não foi possível atualizar a revisão.");
+    } finally {
+      setSalvandoEdicao(false);
+    }
   }
 
   if (!carro) {
     return (
       <div style={{ padding: 16 }}>
-        <BotaoVoltar onClick={onBack} />
         <p style={{ marginTop: 12 }}>Carro não encontrado.</p>
       </div>
     );
@@ -270,205 +284,214 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
 
   return (
     <div className="revisoes-tela">
-      <BotaoVoltar onClick={onBack} />
-      <h2>{titulo === "Registrar revisão" ? titulo : `${titulo} — ${carro.name}`}</h2>
+      <h2>{modo === "historico" ? "Histórico de revisões" : "Registrar revisão"}</h2>
 
-      <form className="revisoes-formulario" onSubmit={adicionarRevisao}>
-        <label>
-          Tipo
-          <select
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value)}
-          >
-            {tipos.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="revisoes-par">
+      {modo !== "historico" && <form className="revisoes-formulario" onSubmit={adicionarRevisao}>
           <label>
-            Data
-            <input
-              type="date"
-              value={data}
-              onChange={(e) => setData(e.target.value)}
+            Tipo
+            <select
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value)}
+            >
+              {tipos.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="revisoes-par">
+            <label>
+              Data
+              <input
+                type="date"
+                value={data}
+                onChange={(e) => setData(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Quilometragem (km)
+              <input
+                type="number"
+                inputMode="numeric"
+                value={km}
+                onChange={(e) => setKm(e.target.value)}
+                placeholder="ex.: 82500"
+              />
+            </label>
+          </div>
+
+          <label className="revisoes-periodica">
+            <input type="checkbox" checked={periodica} onChange={e => setPeriodica(e.target.checked)} />
+            Esta revisão é periódica?
+          </label>
+
+          {periodica && <div className="revisoes-par revisoes-prazo">
+            <label>
+              Próxima data
+              <input
+                type="date"
+                value={proximaData}
+                onChange={(e) => setProximaData(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Próxima quilometragem (km)
+              <input
+                type="number"
+                inputMode="numeric"
+                value={proximoKm}
+                onChange={(e) => setProximoKm(e.target.value)}
+                placeholder="ex.: 90000"
+              />
+            </label>
+          </div>}
+
+          <label>
+            Observações
+            <textarea
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              placeholder="Opcional"
             />
           </label>
 
-          <label>
-            Quilometragem (km)
-            <input
-              type="number"
-              inputMode="numeric"
-              value={km}
-              onChange={(e) => setKm(e.target.value)}
-              placeholder="ex.: 82500"
-            />
-          </label>
-        </div>
+          <fieldset className="gr-attachment-picker">
+            <legend>Anexos da revisão (opcional)</legend>
+            <SeletorAnexos desabilitado={salvando} onSelecionar={arquivos => setAnexosNovos(atuais => [...atuais, ...arquivos])} />
+            {anexosNovos.length > 0 && <ul>
+              {anexosNovos.map((arquivo, indice) => <li key={indice}>
+                {arquivo.name}{" "}
+                <button type="button" disabled={salvando} onClick={() => setAnexosNovos(atuais => atuais.filter((_, i) => i !== indice))}>
+                  Remover
+                </button>
+              </li>)}
+            </ul>}
+          </fieldset>
 
-        <div className="revisoes-par revisoes-prazo">
-          <label>
-            Próxima data
-            <input
-              type="date"
-              value={proximaData}
-              onChange={(e) => setProximaData(e.target.value)}
-            />
-          </label>
+          <button type="submit" className="gr-add" disabled={salvando}>{salvando ? "Salvando…" : "Adicionar"}</button>
+          {erroCadastro && <p role="alert">{erroCadastro}</p>}
+          {avisoCadastro && <p role="status">{avisoCadastro}</p>}
+      </form>}
 
-          <label>
-            Próxima quilometragem (km)
-            <input
-              type="number"
-              inputMode="numeric"
-              value={proximoKm}
-              onChange={(e) => setProximoKm(e.target.value)}
-              placeholder="ex.: 90000"
-            />
-          </label>
-        </div>
+      {modo === "historico" && (revisoes.length === 0 ? (
+          <p>Nenhuma revisão cadastrada ainda.</p>
+        ) : (
+          <ul className="revisoes-historico">
+            {revisoes.map((r) => {
+              const emEdicao = editId === r.id;
 
-        <label>
-          Observações
-          <textarea
-            value={observacoes}
-            onChange={(e) => setObservacoes(e.target.value)}
-            placeholder="Opcional"
-          />
-        </label>
-
-        <fieldset className="gr-attachment-picker">
-          <legend>Anexos da revisão (opcional)</legend>
-          <SeletorAnexos desabilitado={salvando} onSelecionar={arquivos => setAnexosNovos(atuais => [...atuais, ...arquivos])} />
-          {anexosNovos.length > 0 && <ul>
-            {anexosNovos.map((arquivo, indice) => <li key={indice}>
-              {arquivo.name}{" "}
-              <button type="button" disabled={salvando} onClick={() => setAnexosNovos(atuais => atuais.filter((_, i) => i !== indice))}>
-                Remover
-              </button>
-            </li>)}
-          </ul>}
-        </fieldset>
-
-        <button type="submit" className="gr-add" disabled={salvando}>{salvando ? "Salvando…" : "Adicionar"}</button>
-        {erroCadastro && <p role="alert">{erroCadastro}</p>}
-      </form>
-
-      <h3 className="revisoes-historico-titulo">Histórico</h3>
-
-      {revisoes.length === 0 ? (
-        <p>Nenhuma revisão cadastrada ainda.</p>
-      ) : (
-        <ul className="revisoes-historico">
-          {revisoes.map((r) => {
-            const emEdicao = editId === r.id;
-
-            return (
-              <li className="revisoes-registro" key={r.id}>
-                {!emEdicao ? (
-                  <>
-                    <div className="revisoes-registro-topo">
-                      <div>
-                        <strong>{r.type}</strong>
-                        <p>{[formatarDataRevisao(r.date), r.mileage != null ? `${Number(r.mileage).toLocaleString("pt-BR")} km` : null].filter(Boolean).join(" · ")}</p>
+              return (
+                <li className="revisoes-registro" key={r.id}>
+                  {!emEdicao ? (
+                    <>
+                      <div className="revisoes-registro-topo">
+                        <div>
+                          <strong>{r.type}</strong>
+                          <p>{[formatarDataRevisao(r.date), r.mileage != null ? `${Number(r.mileage).toLocaleString("pt-BR")} km` : null].filter(Boolean).join(" · ")}</p>
+                        </div>
+                        <div className="revisoes-acoes">
+                          <button type="button" onClick={() => iniciarEdicao(r)}>Editar</button>
+                          <button type="button" onClick={() => excluirRevisao(r.id)}>Excluir</button>
+                        </div>
                       </div>
+                      {revisaoPeriodica(r) ? <dl className="revisoes-resumo">
+                        <div><dt>Próxima data</dt><dd>{formatarDataRevisao(r.nextDate) || "—"}</dd></div>
+                        <div><dt>Próxima quilometragem</dt><dd>{r.nextMileage != null ? `${Number(r.nextMileage).toLocaleString("pt-BR")} km` : "—"}</dd></div>
+                      </dl> : <p className="revisoes-observacao">Revisão avulsa</p>}
+                      {r.notes && <p className="revisoes-observacao"><strong>Observações</strong> {r.notes}</p>}
+                      <FotosDaEntidade ownerType="service" ownerId={r.id} />
+                    </>
+                  ) : (
+                    <div className="revisoes-formulario revisoes-edicao">
+                      <strong>Editando revisão</strong>
+
+                      <label>
+                        Tipo
+                        <select
+                          value={eTipo}
+                          onChange={(e) => setETipo(e.target.value)}
+                        >
+                          {[...new Set([...tipos, eTipo])].map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <div className="revisoes-par">
+                        <label>
+                          Data
+                          <input
+                            type="date"
+                            value={eData}
+                            onChange={(e) => setEData(e.target.value)}
+                          />
+                        </label>
+
+                        <label>
+                          Quilometragem (km)
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            value={eKm}
+                            onChange={(e) => setEKm(e.target.value)}
+                          />
+                        </label>
+                      </div>
+
+                      <label className="revisoes-periodica">
+                        <input type="checkbox" checked={ePeriodica} onChange={e => setEPeriodica(e.target.checked)} />
+                        Esta revisão é periódica?
+                      </label>
+
+                      {ePeriodica && <div className="revisoes-par revisoes-prazo">
+                        <label>
+                          Próxima data
+                          <input
+                            type="date"
+                            value={eProxData}
+                            onChange={(e) => setEProxData(e.target.value)}
+                          />
+                        </label>
+
+                        <label>
+                          Próxima quilometragem (km)
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            value={eProxKm}
+                            onChange={(e) => setEProxKm(e.target.value)}
+                          />
+                        </label>
+                      </div>}
+
+                      <label>
+                        Observações
+                        <textarea
+                          value={eObs}
+                          onChange={(e) => setEObs(e.target.value)}
+                        />
+                      </label>
+
                       <div className="revisoes-acoes">
-                        <button type="button" onClick={() => iniciarEdicao(r)}>Editar</button>
-                        <button type="button" onClick={() => excluirRevisao(r.id)}>Excluir</button>
+                        <button type="button" onClick={salvarEdicao} disabled={salvandoEdicao}>
+                          Salvar
+                        </button>
+                        <button type="button" onClick={cancelarEdicao} disabled={salvandoEdicao}>Cancelar</button>
                       </div>
+                      {erroEdicao && <p role="alert">{erroEdicao}</p>}
                     </div>
-                    <dl className="revisoes-resumo">
-                      <div><dt>Próxima data</dt><dd>{formatarDataRevisao(r.nextDate) || "—"}</dd></div>
-                      <div><dt>Próxima quilometragem</dt><dd>{r.nextMileage != null ? `${Number(r.nextMileage).toLocaleString("pt-BR")} km` : "—"}</dd></div>
-                    </dl>
-                    {r.notes && <p className="revisoes-observacao"><strong>Observações</strong> {r.notes}</p>}
-                    <FotosDaEntidade ownerType="service" ownerId={r.id} />
-                  </>
-                ) : (
-                  <div className="revisoes-formulario revisoes-edicao">
-                    <strong>Editando revisão</strong>
-
-                    <label>
-                      Tipo
-                      <select
-                        value={eTipo}
-                        onChange={(e) => setETipo(e.target.value)}
-                      >
-                        {[...new Set([...tipos, eTipo])].map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <div className="revisoes-par">
-                      <label>
-                        Data
-                        <input
-                          type="date"
-                          value={eData}
-                          onChange={(e) => setEData(e.target.value)}
-                        />
-                      </label>
-
-                      <label>
-                        Quilometragem (km)
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          value={eKm}
-                          onChange={(e) => setEKm(e.target.value)}
-                        />
-                      </label>
-                    </div>
-
-                    <div className="revisoes-par revisoes-prazo">
-                      <label>
-                        Próxima data
-                        <input
-                          type="date"
-                          value={eProxData}
-                          onChange={(e) => setEProxData(e.target.value)}
-                        />
-                      </label>
-
-                      <label>
-                        Próxima quilometragem (km)
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          value={eProxKm}
-                          onChange={(e) => setEProxKm(e.target.value)}
-                        />
-                      </label>
-                    </div>
-
-                    <label>
-                      Observações
-                      <textarea
-                        value={eObs}
-                        onChange={(e) => setEObs(e.target.value)}
-                      />
-                    </label>
-
-                    <div className="revisoes-acoes">
-                      <button type="button" onClick={salvarEdicao}>
-                        Salvar
-                      </button>
-                      <button onClick={cancelarEdicao}>Cancelar</button>
-                    </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+      ))}
     </div>
   );
 }
@@ -531,29 +554,6 @@ function FotosDaEntidade({ ownerType, ownerId }) {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function Anexo({ anexo, onRemover }) {
-  const elemento = useRef(null);
-  const disponivel = anexo.blob instanceof Blob;
-  const imagem = anexo.blob?.type?.startsWith("image/") || anexo.category === "foto";
-  const nome = anexo.nomeArquivo || (imagem ? "Foto da revisão" : "Arquivo da revisão");
-
-  useEffect(() => {
-    if (!disponivel) return;
-    const url = URL.createObjectURL(anexo.blob);
-    elemento.current.setAttribute(imagem ? "src" : "href", url);
-    return () => URL.revokeObjectURL(url);
-  }, [anexo.blob, disponivel, imagem]);
-
-  return (
-    <div className="gr-attachment">
-      {disponivel && imagem && <img ref={elemento} alt={nome} />}
-      {disponivel && !imagem && <a ref={elemento} download={nome}>{nome}</a>}
-      {!disponivel && <span>Arquivo indisponível</span>}
-      <button type="button" onClick={onRemover}>Remover</button>
     </div>
   );
 }

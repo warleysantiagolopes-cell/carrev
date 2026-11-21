@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDb } from "../db/db";
+import "./Revisoes.css";
+
+const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
 const PRIORIDADES = ["Baixa", "Média", "Alta"];
 
-export default function Desejos({ carId, carName, hoje, titulo = "Desejos" }) {
+export default function Desejos({ carId, hoje, titulo = "Lista de desejos" }) {
   const db = useDb();
   const [lista, setLista] = useState([]);
 
@@ -80,76 +83,60 @@ export default function Desejos({ carId, carName, hoje, titulo = "Desejos" }) {
   }, [lista]);
 
   return (
-    <div>
-      <h3>{titulo} — {carName}</h3>
-
-      <form onSubmit={adicionar} style={{ display: "grid", gap: 8, maxWidth: 520 }}>
+    <div className="revisoes-tela">
+      <h2>{titulo}</h2>
+      <form className="revisoes-formulario" onSubmit={adicionar}>
         <label>
           Peça desejada
-          <input value={peca} onChange={(e) => setPeca(e.target.value)} style={{ display: "block", width: "100%" }} />
+          <input value={peca} onChange={e => setPeca(e.target.value)} required />
         </label>
-
-        <div style={{ display: "grid", gap: 8, gridTemplateColumns: "1fr 1fr" }}>
+        <div className="revisoes-par">
           <label>
             Custo estimado (R$)
-            <input type="number" inputMode="decimal" value={estimado} onChange={(e) => setEstimado(e.target.value)} style={{ display: "block", width: "100%" }} />
+            <input type="number" inputMode="decimal" min="0" step="0.01"
+              value={estimado} onChange={e => setEstimado(e.target.value)} />
           </label>
-
           <label>
             Prioridade
-            <select value={prioridade} onChange={(e) => setPrioridade(e.target.value)} style={{ display: "block", width: "100%" }}>
-              {PRIORIDADES.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
+            <select value={prioridade} onChange={e => setPrioridade(e.target.value)}>
+              {PRIORIDADES.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </label>
         </div>
-
         <label>
-          Onde comprar (loja/site)
-          <input value={onde} onChange={(e) => setOnde(e.target.value)} style={{ display: "block", width: "100%" }} />
+          Onde comprar
+          <input value={onde} onChange={e => setOnde(e.target.value)} />
         </label>
-
         <label>
           Observações
-          <input value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Opcional" style={{ display: "block", width: "100%" }} />
+          <textarea value={obs} onChange={e => setObs(e.target.value)} />
         </label>
-
-        <button type="submit">Adicionar desejo</button>
+        <button type="submit" className="gr-add">Adicionar desejo</button>
       </form>
 
-      <div style={{ marginTop: 14 }}>
-        <strong>Total estimado:</strong> R$ {totalEstimado.toFixed(2)}
+      <div className="revisoes-registro-topo revisoes-historico-titulo">
+        <h3>Itens desejados</h3>
+        <strong>Total estimado · {moeda.format(totalEstimado)}</strong>
       </div>
-
-      <h4 style={{ marginTop: 14 }}>Lista de desejos</h4>
-      {lista.length === 0 ? (
-        <p>Nenhum desejo cadastrado ainda.</p>
-      ) : (
-        <ul style={{ paddingLeft: 18 }}>
-          {lista.map((x) => (
-            <li key={x.id} style={{ marginBottom: 10 }}>
+      {lista.length === 0 && <p>Nenhum desejo cadastrado ainda.</p>}
+      <ul className="revisoes-historico">
+        {lista.map(item => (
+          <li className="revisoes-registro" key={item.id}>
+            <div className="revisoes-registro-topo">
               <div>
-                <strong>{x.part}</strong> — Prioridade: <strong>{x.priority}</strong>
-                {typeof x.estimatedPrice === "number" ? ` — R$ ${x.estimatedPrice.toFixed(2)}` : ""}
+                <strong>{item.part}</strong>
+                <p>Prioridade {item.priority?.toLocaleLowerCase("pt-BR")}{item.vendor ? ` · ${item.vendor}` : ""}</p>
               </div>
-              <div style={{ fontSize: 14 }}>
-                {x.vendor ? `Onde: ${x.vendor}` : ""}
-                {x.notes ? ` — Obs.: ${x.notes}` : ""}
-              </div>
-
-              <div style={{ marginTop: 6 }}>
-                <button onClick={() => marcarComoComprado(x)} style={{ marginRight: 8 }}>
-                  Marcar como comprado
-                </button>
-                <button onClick={() => excluir(x.id)}>
-                  Excluir
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+              {item.estimatedPrice != null && <strong>{moeda.format(item.estimatedPrice)}</strong>}
+            </div>
+            {item.notes && <p className="revisoes-observacao">{item.notes}</p>}
+            <div className="revisoes-acoes">
+              <button type="button" onClick={() => marcarComoComprado(item)}>Marcar como comprado</button>
+              <button type="button" className="revisoes-excluir" onClick={() => excluir(item.id)}>Excluir</button>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

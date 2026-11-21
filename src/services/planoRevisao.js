@@ -18,6 +18,7 @@ export function calcularPlano(carro, revisoes) {
   const execucoes = new Map(itens.map(item => [item.id, []]));
   const legados = itens.filter(item => item.kmAlvo == null);
   for (const revisao of revisoes) {
+    if (revisao.periodica === false) continue;
     const item = itemDaRevisao(legados, revisao);
     if (item) execucoes.get(item.id).push(revisao);
   }
@@ -36,9 +37,13 @@ export function calcularPlano(carro, revisoes) {
   });
 }
 
+export function revisaoPeriodica(revisao) {
+  return revisao.periodica ?? Boolean(revisao.nextDate || revisao.nextMileage != null);
+}
+
 export function reunirPrazos(carro, revisoes) {
   return [
-    ...revisoes.filter(r => r.nextDate || r.nextMileage != null),
+    ...revisoes.filter(r => revisaoPeriodica(r) && (r.nextDate || r.nextMileage != null)),
     ...calcularPlano(carro, revisoes).filter(item => item.nextMileage != null),
   ];
 }

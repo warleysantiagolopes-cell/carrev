@@ -98,3 +98,64 @@
 .revisoes-acoes button { min-height: 44px; padding: 6px 9px; color: #ffd000; background: transparent; border: 1px solid #486447; }
 .revisoes-edicao { border: 0; padding: 0; }
 .revisoes-observacao { overflow-wrap: anywhere; white-space: pre-wrap; }
+
+.revisoes-formulario .revisoes-periodica {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 10px;
+}
+
+.revisoes-periodica input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: #ffd000;
+}
+
+.revisoes-acoes {
+  flex-wrap: wrap;
+}
+
+.revisoes-acoes .revisoes-excluir {
+  color: #ffc4c4;
+  border-color: #a65353;
+}
+
+.revisoes-tela .gr-attachment {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.revisoes-confirmacao {
+  color: #f5f4eb;
+  width: min(400px, calc(100% - 32px));
+}
+
+.revisoes-confirmacao::backdrop {
+  background: #000b;
+}
+
+.revisoes-confirmacao h3,
+.revisoes-historico-titulo h3 {
+  margin: 0;
+}
+
+.revisoes-confirmacao .revisoes-excluir {
+  background: #702729;
+  color: #fff;
+}
+
+.revisoes-anexos-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 8px;
+}
+
+.revisoes-arquivos {
+  padding-left: 20px;
+  overflow-wrap: anywhere;
+}

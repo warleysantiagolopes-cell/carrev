@@ -16,6 +16,7 @@ import "./CarroDetalhe.css";
 const abas = [
   { id: "geral", titulo: "Visão geral", icone: "carro" },
   { id: "revisoes", titulo: "Registrar revisão", icone: "chave" },
+  { id: "historico", titulo: "Histórico de revisões", icone: "documento" },
   { id: "plano", titulo: "Plano de revisão", icone: "calendario" },
   { id: "proximas", titulo: "Próximas revisões", icone: "sino" },
   { id: "documentos", titulo: "Documentos", icone: "documento" },
@@ -244,9 +245,10 @@ export default function CarroDetalhe({ carId, onBack }) {
 
           {aba === "plano" && <PlanoRevisao key={carro.id} carro={carro} />}
           {aba === "proximas" && <Proximas carId={carId} />}
-          {aba === "revisoes" && <Revisoes titulo="Registrar revisão" carId={carId} />}
-          {aba === "acabamentos" && <Acabamentos titulo="Registrar item estético" carId={carId} carName={carro.name} />}
-          {aba === "desejos" && <Desejos titulo="Lista de desejos" carId={carId} carName={carro.name} />}
+          {aba === "revisoes" && <Revisoes key="cadastro" modo="cadastro" carId={carId} />}
+          {aba === "historico" && <Revisoes key="historico" modo="historico" carId={carId} />}
+          {aba === "acabamentos" && <Acabamentos carId={carId} />}
+          {aba === "desejos" && <Desejos carId={carId} />}
           {aba === "documentos" && <Documentos carId={carId} />}
         </>
       )}
