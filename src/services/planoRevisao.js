@@ -13,23 +13,16 @@ export function itemDaRevisao(itens, revisao) {
       ?? itens.find(item => item.nomesAnteriores?.some(nome => normalizar(nome) === normalizar(revisao.type)));
 }
 
-function adicionarMeses(valor, meses) {
-  const [ano, mes, dia] = valor.split("-").map(Number);
-  const ultimoDia = new Date(Date.UTC(ano, mes + meses, 0));
-  ultimoDia.setUTCDate(Math.min(dia, ultimoDia.getUTCDate()));
-  return ultimoDia.toISOString().slice(0, 10);
-}
-
 export function calcularPlano(carro, revisoes) {
   const itens = itensDoPlano(carro);
   const execucoes = new Map(itens.map(item => [item.id, []]));
+  const legados = itens.filter(item => item.kmAlvo == null);
   for (const revisao of revisoes) {
-    const item = itemDaRevisao(itens, revisao);
+    const item = itemDaRevisao(legados, revisao);
     if (item) execucoes.get(item.id).push(revisao);
   }
   return itens.map(item => {
     const historico = execucoes.get(item.id);
-    const dataBase = historico.reduce((ultima, r) => r.date > ultima ? r.date : ultima, item.dataBase || "");
     const kmBase = historico.reduce((maior, r) =>
       Number.isFinite(r.mileage) && r.mileage >= 0 && (maior == null || r.mileage > maior) ? r.mileage : maior,
     item.kmBase ?? null);
@@ -38,21 +31,15 @@ export function calcularPlano(carro, revisoes) {
       id: `plano:${item.id}`,
       carId: carro.id,
       type: item.nome,
-      date: dataBase,
-      nextDate: item.meses && dataBase ? adicionarMeses(dataBase, item.meses) : null,
-      nextMileage: item.km && kmBase !== null ? kmBase + item.km : null,
+      nextMileage: item.kmAlvo ?? (item.km && kmBase !== null ? kmBase + item.km : null),
     };
   });
 }
 
 export function reunirPrazos(carro, revisoes) {
-  const itens = itensDoPlano(carro);
-  const plano = calcularPlano(carro, revisoes);
-  const definidos = plano.filter(item => item.nextDate || item.nextMileage != null);
-  const ids = new Set(definidos.map(item => item.id));
   return [
-    ...revisoes.filter(r => (r.nextDate || r.nextMileage != null) && !ids.has(`plano:${itemDaRevisao(itens, r)?.id}`)),
-    ...definidos,
+    ...revisoes.filter(r => r.nextDate || r.nextMileage != null),
+    ...calcularPlano(carro, revisoes).filter(item => item.nextMileage != null),
   ];
 }
 

@@ -192,11 +192,7 @@ export async function gerarFichaVeiculo(db, id) {
     secao("Plano de revisão");
     for (const servico of plano) {
       item(servico.nome);
-      campos([
-        ["Intervalo em meses", servico.meses], ["Intervalo em quilômetros", km(servico.km)],
-        ["Data de referência cadastrada", data(servico.dataBase)], ["Quilometragem de referência cadastrada", km(servico.kmBase)],
-        ["Próxima data", data(servico.nextDate)], ["Próxima quilometragem", km(servico.nextMileage)],
-      ]);
+      campos([["Quilometragem-alvo", km(servico.nextMileage)]]);
     }
   }
 

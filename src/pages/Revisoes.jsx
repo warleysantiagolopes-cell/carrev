@@ -214,7 +214,7 @@ export default function Revisoes({ carId, onBack, titulo = "Revisões" }) {
     await carregar();
   }
 
-  const itens = itensDoPlano(carro);
+  const itens = itensDoPlano(carro).filter(item => item.kmAlvo == null);
   const tipos = [...new Set([...TIPOS_REVISAO, ...itens.map(item => item.nome)])];
 
   function iniciarEdicao(r) {

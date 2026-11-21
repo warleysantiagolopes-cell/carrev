@@ -355,6 +355,10 @@ export default function Cars({
      KM
   ================================================== */
 
+  const [kmPelaGaragem, setKmPelaGaragem] = useState(false);
+  const [salvandoKmGaragem, setSalvandoKmGaragem] = useState(false);
+  const [erroKmGaragem, setErroKmGaragem] = useState("");
+
   const [
     kmId,
     setKmId,
@@ -1356,6 +1360,20 @@ export default function Cars({
      ATUALIZAR KM + FIPE AUTOMÁTICA
   ================================================== */
 
+  async function salvarKmPelaGaragem(evento) {
+    evento.preventDefault();
+    if (salvandoKmGaragem) return;
+    setSalvandoKmGaragem(true);
+    setErroKmGaragem("");
+    try {
+      await salvarKm();
+    } catch {
+      setErroKmGaragem("Não foi possível atualizar a quilometragem. Tente novamente.");
+    } finally {
+      setSalvandoKmGaragem(false);
+    }
+  }
+
   function iniciarKm(
     carro
   ) {
@@ -1381,6 +1399,8 @@ export default function Cars({
 
   function cancelarKm() {
     setKmId(null);
+    setKmPelaGaragem(false);
+    setErroKmGaragem("");
     setKmValor("");
   }
 
@@ -1429,13 +1449,15 @@ export default function Cars({
         ? carroAntes.currentMileage
         : null;
 
-    await db.cars.update(
+    const alterados = await db.cars.update(
       kmId,
       {
         currentMileage:
           kmFinal,
       }
     );
+
+    if (!alterados && kmPelaGaragem) throw new Error("Veículo não encontrado.");
 
     /*
       FIPE automática apenas
@@ -1523,6 +1545,29 @@ export default function Cars({
     );
   }
 
+  if (kmPelaGaragem && kmId != null) {
+    const carro = carros.find(item => item.id === kmId);
+    return <section className="gr-feature-page">
+      <header className="gr-page-top">
+        <BotaoVoltar onClick={salvandoKmGaragem ? null : cancelarKm} />
+        <h1>Atualizar km</h1>
+      </header>
+      <div className="revisoes-tela">
+        <form className="revisoes-formulario" onSubmit={salvarKmPelaGaragem}>
+          <strong>{carro?.name}</strong>
+          <label>Quilometragem atual (km)
+            <input type="number" inputMode="numeric" min="0" step="1" required
+              value={kmValor} onChange={evento => setKmValor(evento.target.value)} disabled={salvandoKmGaragem} />
+          </label>
+          <button type="submit" className="gr-add" disabled={salvandoKmGaragem}>
+            {salvandoKmGaragem ? "Salvando…" : "Salvar quilometragem"}
+          </button>
+          {erroKmGaragem && <p role="alert">{erroKmGaragem}</p>}
+        </form>
+      </div>
+    </section>;
+  }
+
   if (!modoLista && !mostrarCadastro && editId == null && kmId == null) {
     if (erroGaragem) return <p className="gr-feature-page" role="alert">Não foi possível carregar a garagem. Tente atualizar pelo menu Mais.</p>;
     if (carregandoGaragem && destinoHome !== "Início") return <p className="gr-feature-page" role="status">Carregando garagem…</p>;
@@ -1536,6 +1581,7 @@ export default function Cars({
       resumo={resumoGaragem}
       onAdicionar={abrirCadastro}
       onAbrirCarro={setCarroSelecionadoId}
+      onAtualizarKm={carro => { iniciarKm(carro); setKmPelaGaragem(true); window.scrollTo(0, 0); }}
       onVeiculos={() => setModoLista(true)}
       onAlertas={abrirRevisoesStatus}
     />;

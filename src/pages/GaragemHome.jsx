@@ -13,6 +13,7 @@ export function Icone({ nome, ...props }) {
     carro: <><path d="m5 10 2-5h10l2 5M4 10h16v8H4zM7 18v2m10-2v2M7 14h2m6 0h2" /></>,
     casa: <><path d="m3 11 9-8 9 8M5 10v11h5v-6h4v6h5V10" /></>,
     bomba: <><path d="M4 21V3h10v18M3 21h12M6 6h6v5H6zM14 12h2a2 2 0 0 1 2 2v4a2 2 0 0 0 4 0V8l-4-4M20 6v5h2" /></>,
+    odometro: <path d="M4 19a9 9 0 1 1 16 0ZM12 16l4-5M6 15h1m5-7v1m5 6h1" />,
     chave: <><path d="M14 6a5 5 0 0 0-6 6L2 18a2.8 2.8 0 0 0 4 4l6-6a5 5 0 0 0 6-6l-3 3-4-4 3-3Z" /></>,
     documento: <><path d="M5 2h9l5 5v15H5zM14 2v6h5M8 12h8M8 16h8M8 19h5" /></>,
     sino: <><path d="M5 10a7 7 0 0 1 14 0v6l2 3H3l2-3zM10 22h4M12 1v2" /></>,
@@ -73,7 +74,7 @@ function FipeVeiculo({ carro }) {
 
 export default function GaragemHome({
   carros, resumo, nomeGaragem, menuAberto, onMenu, destinoInicial, onVoltarInicio,
-  onAdicionar, onAbrirCarro, onVeiculos, onAlertas,
+  onAdicionar, onAbrirCarro, onVeiculos, onAlertas, onAtualizarKm,
 }) {
   const db = useDb();
   const porVeiculo = ["Abastecimentos", "Manutenções", "Documentos", "Tabela FIPE"].includes(destinoInicial);
@@ -125,6 +126,7 @@ export default function GaragemHome({
     {nome:"Tabela FIPE",icone:"moedas",sub:"Consultar valores",acao:() => escolher("Tabela FIPE")},
     {nome:"Alertas",icone:"sino",cor:pendentes > 0 ? "gr-alertas-pendentes" : undefined,sub:`${pendentes} pendente${pendentes === 1 ? "" : "s"}`,acao:() => onAlertas("TODAS")},
     {nome:"Abastecimentos",icone:"bomba",cor:"red",sub:contador(dados.abastecimentos.length),acao:() => escolher("Abastecimentos")},
+    {nome:"Atualizar km",icone:"odometro",sub:"Quilometragem",acao:() => carros.length ? setSelecionar("Atualizar km") : onAdicionar()},
   ];
   return <div className="gr-home">
     <header className="gr-topbar"><button type="button" aria-label="Mais opções" aria-expanded={menuAberto} aria-controls={menuAberto ? "gr-menu" : undefined} onClick={onMenu}><Icone nome="menu"/></button><div className="gr-wordmark" aria-label="CarRev">Car<span>Rev</span></div><button type="button" aria-label={`Alertas: ${pendentes} pendentes`} onClick={() => onAlertas("TODAS")} className="gr-bell"><Icone nome="sino"/>{pendentes > 0 && <span className="gr-notification-dot"/>}</button></header>
@@ -140,6 +142,10 @@ export default function GaragemHome({
       {erro && <p className="gr-inline-error" role="alert">{erro}</p>}
       <p className="gr-signature">SUA GARAGEM, SUA HISTÓRIA.</p>
     </main>
-    {selecionar && <Seletor tipo={selecionar} carros={carros} fechar={fecharSeletor} escolher={c => {setPagina({tipo:selecionar,carro:c});setSelecionar(null);}}/>}
+    {selecionar && <Seletor tipo={selecionar} carros={carros} fechar={fecharSeletor} escolher={c => {
+      if (selecionar === "Atualizar km") onAtualizarKm(c);
+      else setPagina({tipo:selecionar,carro:c});
+      setSelecionar(null);
+    }}/>}
   </div>;
 }
